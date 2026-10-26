@@ -1,16 +1,42 @@
 # Cost Notch
 
-[![CI](https://github.com/remigiusz-nowacki_hge/cost-notch/actions/workflows/ci.yml/badge.svg)](https://github.com/remigiusz-nowacki_hge/cost-notch/actions/workflows/ci.yml)
+[![CI](https://github.com/reestate-io/cost-notch/actions/workflows/ci.yml/badge.svg)](https://github.com/reestate-io/cost-notch/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black.svg)](https://github.com/remigiusz-nowacki_hge/cost-notch/releases)
+[![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black.svg)](https://github.com/reestate-io/cost-notch/releases)
 
 macOS menu-bar and notch overlay for Cursor spend. Hover the camera notch (or the top edge of any display) to expand Current, Today, and recent queries.
 
 Not an official Cursor product.
 
+## Demo
+
+Overlay: collapsed pill, expanded Cursor card, then Settings.
+
+![Notch overlay expanding to the Cursor card and Settings](docs/media/overlay.gif)
+
+[overlay.mov](docs/media/overlay.mov)
+
+Menu bar: Current and Today chips beside the notch.
+
+![Menu-bar chips for Current and Today](docs/media/menu-bar.gif)
+
+[menu-bar.mov](docs/media/menu-bar.mov)
+
+### Screenshots
+
+![Collapsed notch](docs/media/collapsed.jpg)
+
+![Expanded Cursor card](docs/media/expanded.jpg)
+
+![Menu-bar chips](docs/media/menu-bar.jpg)
+
+![Display settings](docs/media/settings-display.png)
+
+![Cursor alerts, daily budget, and refresh](docs/media/settings-cursor.png)
+
 ## Install
 
-Download the latest **.dmg** or **.pkg** from [Releases](https://github.com/remigiusz-nowacki_hge/cost-notch/releases).
+Download the latest **.dmg** or **.pkg** from [Releases](https://github.com/reestate-io/cost-notch/releases).
 
 Unsigned/ad-hoc builds: first launch → System Settings → Privacy & Security → Open Anyway.
 
