@@ -10,15 +10,9 @@ Not an official Cursor product.
 
 ## Demo
 
-Overlay: collapsed pill, expanded Cursor card, then Settings.
+Menu bar, notch, and Settings.
 
-![Notch overlay expanding to the Cursor card and Settings](docs/media/overlay.gif)
-
-[overlay.mov](docs/media/overlay.mov)
-
-Menu bar: Current and Today chips beside the notch.
-
-![Menu-bar chips for Current and Today](docs/media/menu-bar.gif)
+![Menu bar, notch overlay, and Settings](docs/media/menu-bar.gif)
 
 [menu-bar.mov](docs/media/menu-bar.mov)
 
