@@ -6,6 +6,8 @@
 
 macOS menu-bar and notch overlay for Cursor spend. Hover the camera notch (or the top edge of any display) to expand Current, Today, and recent queries.
 
+Compatible with Intel and Apple Silicon (M-series) Macs. The current build is Intel (`x86_64`) and runs on Apple Silicon through Rosetta.
+
 Not an official Cursor product.
 
 ## Demo
