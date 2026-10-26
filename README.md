@@ -22,18 +22,6 @@ Menu bar: Current and Today chips beside the notch.
 
 [menu-bar.mov](docs/media/menu-bar.mov)
 
-### Screenshots
-
-![Collapsed notch](docs/media/collapsed.jpg)
-
-![Expanded Cursor card](docs/media/expanded.jpg)
-
-![Menu-bar chips](docs/media/menu-bar.jpg)
-
-![Display settings](docs/media/settings-display.png)
-
-![Cursor alerts, daily budget, and refresh](docs/media/settings-cursor.png)
-
 ## Install
 
 Download the latest **.dmg** or **.pkg** from [Releases](https://github.com/remnov/cost-notch/releases).
