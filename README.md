@@ -1,8 +1,8 @@
 # Cost Notch
 
-[![CI](https://github.com/reestate-io/cost-notch/actions/workflows/ci.yml/badge.svg)](https://github.com/reestate-io/cost-notch/actions/workflows/ci.yml)
+[![CI](https://github.com/remnov/cost-notch/actions/workflows/ci.yml/badge.svg)](https://github.com/remnov/cost-notch/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black.svg)](https://github.com/reestate-io/cost-notch/releases)
+[![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black.svg)](https://github.com/remnov/cost-notch/releases)
 
 macOS menu-bar and notch overlay for Cursor spend. Hover the camera notch (or the top edge of any display) to expand Current, Today, and recent queries.
 
@@ -36,7 +36,7 @@ Menu bar: Current and Today chips beside the notch.
 
 ## Install
 
-Download the latest **.dmg** or **.pkg** from [Releases](https://github.com/reestate-io/cost-notch/releases).
+Download the latest **.dmg** or **.pkg** from [Releases](https://github.com/remnov/cost-notch/releases).
 
 Unsigned/ad-hoc builds: first launch → System Settings → Privacy & Security → Open Anyway.
 
