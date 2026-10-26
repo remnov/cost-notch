@@ -56,3 +56,5 @@ swift test
 open "artifacts/Cost Notch.app"   # or dist/
 ./package.sh                     # Cost-Notch-{version}.dmg + .pkg
 ```
+
+Signed GitHub releases (Developer ID + notary + `gh release`): **[RELEASE.md](RELEASE.md)**.

@@ -8,15 +8,13 @@ macOS menu-bar and notch overlay for Cursor spend. Hover the camera notch (or th
 
 Not an official Cursor product.
 
-[![Cost Notch 1.1.0 demo](docs/demo-poster.jpg)](docs/demo-1.1.0.mp4)
-
-[Watch the 1.1.0 demo](docs/demo-1.1.0.mp4)
-
 ## Install
 
 Download the latest **.dmg** or **.pkg** from [Releases](https://github.com/remigiusz-nowacki_hge/cost-notch/releases).
 
-The build is ad-hoc signed. First launch: System Settings → Privacy & Security → Open Anyway.
+Unsigned/ad-hoc builds: first launch → System Settings → Privacy & Security → Open Anyway.
+
+Signed + notarized builds (Apple Team ID): see **[RELEASE.md](RELEASE.md)**.
 
 ## Features
 

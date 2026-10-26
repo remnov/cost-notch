@@ -21,3 +21,5 @@ Read `AGENTS.md` before changing session, usage mapping, or the overlay.
 - Do not commit `dist/`, `artifacts/`, `.build/`, or Cursor session files.
 
 `./package.sh` after a version bump in `Sources/CostNotch/Info.plist`.
+
+Shipping a signed GitHub release: **[RELEASE.md](RELEASE.md)**.
