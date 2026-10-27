@@ -19,6 +19,16 @@ Menu bar, notch, and Settings.
 
 [menu-bar.mov](docs/media/menu-bar.mov)
 
+## Pro and Enterprise
+
+On a Pro plan, Current is the percent of included usage. Today is the percent of the daily budget, with the dollar amount beside it.
+
+![Cost Notch on a Pro plan](docs/media/pro.jpg)
+
+On an Enterprise plan, Current and Today are dollar amounts against the cap.
+
+![Cost Notch on an Enterprise plan](docs/media/enterprise.png)
+
 ## Install
 
 Download the latest **.dmg** or **.pkg** from [Releases](https://github.com/remnov/cost-notch/releases).
