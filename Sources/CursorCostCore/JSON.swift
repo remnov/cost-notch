@@ -28,9 +28,6 @@ enum JSON {
 
     static func number(_ value: Any?) -> Double? {
         guard let value else { return nil }
-        if value is Bool {
-            return nil
-        }
         if let number = value as? NSNumber {
             if CFGetTypeID(number) == CFBooleanGetTypeID() {
                 return nil

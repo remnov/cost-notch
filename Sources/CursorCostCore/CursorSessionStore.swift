@@ -17,19 +17,37 @@ public enum CursorSessionStore {
         return try session(accessToken: auth.accessToken, email: auth.email)
     }
 
-    public static func readAuth(databasePath: URL? = nil) throws -> CursorAuthTokens {
+    public static func readAuth(
+        databasePath: URL? = nil,
+        allowKeychainInteraction: Bool = true
+    ) throws -> CursorAuthTokens {
+        do {
+            return try readAuth(databasePath: databasePath) {
+                try CursorKeychain.password(allowInteraction: allowKeychainInteraction)
+            }
+        } catch CursorCostError.sessionDecryption {
+            CursorKeychain.clearCachedPassword()
+            throw CursorCostError.sessionDecryption
+        }
+    }
+
+    static func readAuth(databasePath: URL? = nil, readPassword: @escaping () throws -> Data) throws -> CursorAuthTokens {
         let path = databasePath ?? defaultDatabasePath()
         guard FileManager.default.fileExists(atPath: path.path) else {
             throw CursorCostError.signIn
         }
 
         let values = try readItemValues(path: path.path)
-        guard let stored = values.stored, let jwt = jwtFromStoredValue(stored) else {
+        guard let stored = values.stored else {
             throw CursorCostError.signIn
+        }
+        var decoder = CursorTokenDecoder(readPassword: readPassword)
+        guard let jwt = jwtFromStoredValue(try decoder.decode(stored)), decodeJwtSub(jwt) != nil else {
+            throw CursorCostError.unsupportedSessionFormat
         }
         return CursorAuthTokens(
             accessToken: jwt,
-            refreshToken: values.refreshToken,
+            refreshToken: try values.refreshToken.map { try decoder.decode($0) },
             email: values.email
         )
     }
@@ -106,14 +124,14 @@ private extension CursorSessionStore {
 
         var email: String?
         for key in emailKeys {
-            email = readValue(db: db, key: key)
+            email = try readValue(db: db, key: key)
             if email != nil {
                 break
             }
         }
         return ItemValues(
-            stored: readValue(db: db, key: accessTokenKey),
-            refreshToken: readValue(db: db, key: refreshTokenKey),
+            stored: try readValue(db: db, key: accessTokenKey),
+            refreshToken: try readValue(db: db, key: refreshTokenKey),
             email: email
         )
     }
@@ -133,28 +151,31 @@ private extension CursorSessionStore {
     }
 
     static func sqliteURI(path: String, immutable: Bool) -> String {
-        let encoded = path.replacingOccurrences(of: " ", with: "%20")
-        var uri = "file:\(encoded)?mode=ro"
+        var uri = URL(fileURLWithPath: path).absoluteString + "?mode=ro"
         if immutable {
             uri += "&immutable=1"
         }
         return uri
     }
 
-    static func readValue(db: OpaquePointer, key: String) -> String? {
+    static func readValue(db: OpaquePointer, key: String) throws -> String? {
         let sql = "SELECT value FROM ItemTable WHERE key = ? LIMIT 1"
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK, let statement else {
-            return nil
+            throw CursorCostError.sessionRead
         }
         defer { sqlite3_finalize(statement) }
         _ = key.withCString { pointer in
             sqlite3_bind_text(statement, 1, pointer, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
         }
-        guard sqlite3_step(statement) == SQLITE_ROW else {
+        switch sqlite3_step(statement) {
+        case SQLITE_ROW:
+            return columnString(statement, index: 0)
+        case SQLITE_DONE:
             return nil
+        default:
+            throw CursorCostError.sessionRead
         }
-        return columnString(statement, index: 0)
     }
 
     static func columnString(_ statement: OpaquePointer, index: Int32) -> String? {

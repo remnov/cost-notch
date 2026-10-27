@@ -136,7 +136,17 @@ public struct UsageReady: Sendable, Equatable {
 public enum UsageSnapshot: Sendable, Equatable {
     case loading
     case ready(UsageReady)
+    case stale(UsageReady, String)
     case error(String)
+
+    func failing(with message: String) -> UsageSnapshot {
+        switch self {
+        case .ready(let data), .stale(let data, _):
+            return .stale(data, message)
+        case .loading, .error:
+            return .error(message)
+        }
+    }
 }
 
 public enum SpendTone: String, Sendable, Equatable {
@@ -170,6 +180,7 @@ public struct UsagePresentation: Sendable, Equatable {
     public var recent: [RecentQueryView]
     public var statusMessage: String
     public var isLoading: Bool
+    public var isStale: Bool = false
     public var plan: String?
     public var email: String?
     public var currentProgress: Double?
@@ -199,6 +210,7 @@ public struct UsagePresentation: Sendable, Equatable {
         self.recent = recent
         self.statusMessage = statusMessage
         self.isLoading = isLoading
+        self.isStale = false
         self.plan = plan
         self.email = email
         self.currentProgress = currentProgress
@@ -232,6 +244,13 @@ public struct CursorAuthTokens: Sendable, Equatable {
 public enum CursorCostError: Error, Equatable, LocalizedError {
     case signIn
     case sessionRead
+    case unsupportedSessionFormat
+    case sessionDecryption
+    case sessionExpired
+    case keychainAccessDenied
+    case keychainInteractionRequired
+    case keychainItemMissing
+    case keychainUnavailable
     case loadUsage
     case cancelled
     case httpStatus(Int)
@@ -242,12 +261,28 @@ public enum CursorCostError: Error, Equatable, LocalizedError {
             return "Sign in to Cursor"
         case .sessionRead:
             return "Could not read Cursor session"
+        case .unsupportedSessionFormat:
+            return "Unsupported Cursor session format. Update Cost Notch."
+        case .sessionDecryption:
+            return "Could not decrypt Cursor session. Open Cursor, then Refresh."
+        case .sessionExpired:
+            return "Cursor session expired. Open Cursor, then Refresh."
+        case .keychainAccessDenied:
+            return "Cursor Keychain access denied. Choose Refresh to retry."
+        case .keychainInteractionRequired:
+            return "Choose Refresh to allow Cursor Keychain access. Unlock your Keychain if needed."
+        case .keychainItemMissing:
+            return "Cursor encryption key missing. Open Cursor and sign in, then Refresh."
+        case .keychainUnavailable:
+            return "Cursor Keychain unavailable. Unlock your Keychain, then Refresh."
         case .loadUsage:
             return "Could not load usage"
         case .cancelled:
             return "Cancelled"
-        case .httpStatus(401), .httpStatus(403):
-            return "Sign in to Cursor"
+        case .httpStatus(401):
+            return "Cursor session expired. Open Cursor, then Refresh."
+        case .httpStatus(403):
+            return "Cursor denied usage access. Check your account permissions."
         case .httpStatus:
             return "Could not load usage"
         }

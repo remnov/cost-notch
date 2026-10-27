@@ -186,6 +186,13 @@ public enum UsageMapper {
                 plan: nil,
                 email: nil
             )
+        case .stale(let data, let message):
+            var presentation = presentation(.ready(data), now: now, refreshing: refreshing, preferences: preferences)
+            presentation.isStale = true
+            presentation.statusMessage = "Stale · \(message)"
+            presentation.currentCompact += "*"
+            presentation.todayCompact = presentation.todayCompact.map { $0 + "*" }
+            return presentation
         case .ready(let data):
             let adjusted = applyBudgetDayBasis(data, basis: preferences.budgetDayBasis, now: now)
             let todayVisible =

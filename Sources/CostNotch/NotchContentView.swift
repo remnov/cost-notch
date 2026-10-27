@@ -88,12 +88,15 @@ struct NotchContentView: View {
                     )
                 }
 
-                if presentation.recent.isEmpty {
+                if presentation.recent.isEmpty || presentation.isStale {
                     Text(presentation.statusMessage)
                         .font(.system(size: 11))
                         .foregroundColor(.white.opacity(0.45))
                         .frame(maxWidth: .infinity, alignment: .leading)
-                } else {
+                        .lineLimit(2)
+                        .help(presentation.statusMessage)
+                }
+                if !presentation.recent.isEmpty {
                     ScrollView {
                         VStack(spacing: 4) {
                             ForEach(presentation.recent) { query in
@@ -142,7 +145,7 @@ struct NotchContentView: View {
                             .lineLimit(1)
                     }
                     if let updated = store.lastUpdated {
-                        Text(Formatting.shortTime(updated))
+                        Text((presentation.isStale ? "Stale · " : "") + Formatting.shortTime(updated))
                             .font(.system(size: 10, design: .rounded))
                             .foregroundColor(.white.opacity(0.28))
                             .monospacedDigit()

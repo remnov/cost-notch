@@ -48,13 +48,14 @@ final class MenuBarController: NSObject {
     private func render() {
         let presentation = store.presentation
         currentItem.button?.title = " \(presentation.currentCompact)"
-        currentItem.button?.toolTip = "Current · \(presentation.currentText)"
+        currentItem.button?.toolTip = "Current · \(presentation.currentText)\n\(presentation.statusMessage)"
         currentItem.button?.contentTintColor = NSColor.tone(presentation.currentTone)
 
         if let today = presentation.todayCompact ?? presentation.todayText {
             todayItem.isVisible = true
             todayItem.button?.title = " \(today)"
-            todayItem.button?.toolTip = presentation.todayText.map { "Today · \($0)" } ?? "Today"
+            todayItem.button?.toolTip = (presentation.todayText.map { "Today · \($0)" } ?? "Today")
+                + "\n\(presentation.statusMessage)"
             todayItem.button?.contentTintColor = NSColor.tone(presentation.todayTone)
         } else {
             todayItem.isVisible = false
@@ -71,6 +72,7 @@ final class MenuBarController: NSObject {
         let menu = NSMenu()
         let presentation = store.presentation
         menu.addItem(header("Cursor"))
+        menu.addItem(header(presentation.statusMessage))
         menu.addItem(header("Current  \(presentation.currentText)"))
         if let today = presentation.todayText {
             menu.addItem(header("Today  \(today)"))
