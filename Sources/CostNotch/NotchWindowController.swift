@@ -126,7 +126,7 @@ final class NotchWindowController: NSObject {
     private func handleMouseMove() {
         guard settings.preferences.showNotch else { return }
         let point = NSEvent.mouseLocation
-        guard let screen = NotchGeometry.screen(containing: point) else {
+        guard let screen = NotchGeometry.preferredScreen() else {
             scheduleCollapse()
             return
         }
@@ -134,19 +134,15 @@ final class NotchWindowController: NSObject {
         let overHotspot = geometry.containsActivation(point)
         let overPanel = panel.frame.insetBy(dx: -18, dy: -18).contains(point)
         if overHotspot || overPanel {
-            expand(on: screen)
+            expand()
             return
         }
         scheduleCollapse()
     }
 
     private func expand() {
-        expand(on: activeScreen())
-    }
-
-    private func expand(on screen: NSScreen?) {
         collapseWork?.cancel()
-        guard let screen else { return }
+        guard let screen = NotchGeometry.preferredScreen() else { return }
         let geometry = NotchGeometry.detect(screen: screen)
         let screenChanged = geometry.screenFrame != viewModel.geometry.screenFrame
         if isExpanded, !screenChanged {
@@ -178,7 +174,7 @@ final class NotchWindowController: NSObject {
             if self.panel.frame.insetBy(dx: -18, dy: -18).contains(point) {
                 return
             }
-            if let screen = NotchGeometry.screen(containing: point),
+            if let screen = NotchGeometry.preferredScreen(),
                NotchGeometry.detect(screen: screen).containsActivation(point) {
                 return
             }
@@ -205,7 +201,7 @@ final class NotchWindowController: NSObject {
     }
 
     private func reposition(animated: Bool) {
-        guard let screen = isExpanded ? activeScreen() : NotchGeometry.preferredScreen() else { return }
+        guard let screen = NotchGeometry.preferredScreen() else { return }
         viewModel.geometry = NotchGeometry.detect(screen: screen)
         let frame = isExpanded ? viewModel.geometry.expandedFrame() : viewModel.geometry.collapsedFrame()
         if animated {
@@ -213,12 +209,6 @@ final class NotchWindowController: NSObject {
         } else {
             panel.setFrame(frame, display: true)
         }
-    }
-
-    private func activeScreen() -> NSScreen? {
-        NotchGeometry.screenMatching(viewModel.geometry.screenFrame)
-            ?? NotchGeometry.screen(containing: NSEvent.mouseLocation)
-            ?? NotchGeometry.preferredScreen()
     }
 
     private func animate(to frame: NSRect) {

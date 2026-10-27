@@ -40,21 +40,25 @@ struct NotchGeometry: Equatable {
     }
 
     static func preferredScreen() -> NSScreen? {
-        NSScreen.screens.first { detect(screen: $0).hasNotch }
-            ?? NSScreen.main
-            ?? NSScreen.screens.first
-    }
-
-    static func screen(containing point: NSPoint) -> NSScreen? {
-        let frames = NSScreen.screens.map(\.frame)
-        guard let frame = OverlayHotspot.screenFrame(containing: point, screens: frames) else {
+        let screens = NSScreen.screens
+        let builtIn = screens.first(where: isBuiltIn)?.frame
+        let notched = screens.first { detect(screen: $0).hasNotch }?.frame
+        let fallback = (NSScreen.main ?? screens.first)?.frame
+        guard let frame = OverlayHotspot.pickOverlayScreen(
+            builtIn: builtIn,
+            notched: notched,
+            fallback: fallback
+        ) else {
             return nil
         }
-        return NSScreen.screens.first { $0.frame == frame }
+        return screens.first { $0.frame == frame }
     }
 
-    static func screenMatching(_ frame: NSRect) -> NSScreen? {
-        NSScreen.screens.first { $0.frame == frame }
+    private static func isBuiltIn(_ screen: NSScreen) -> Bool {
+        guard let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else {
+            return false
+        }
+        return CGDisplayIsBuiltin(displayID) != 0
     }
 
     func containsActivation(_ point: NSPoint) -> Bool {
