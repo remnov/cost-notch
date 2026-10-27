@@ -1,7 +1,6 @@
 # Cost Notch
 
 [![CI](https://github.com/remnov/cost-notch/actions/workflows/ci.yml/badge.svg)](https://github.com/remnov/cost-notch/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black.svg)](https://github.com/remnov/cost-notch/releases)
 
 macOS menu-bar and notch overlay for Cursor spend. Hover the camera notch (or the top edge of any display) to expand Current, Today, and recent queries.
@@ -62,8 +61,8 @@ The app is a menu extra (no Dock icon). Quit from the menu-bar item. If spend sh
 - Calls `https://cursor.com/api/usage-summary` and `https://cursor.com/api/dashboard/get-filtered-usage-events`
 - Treat totals as an overlay, not an invoice
 
-## License
+## Copyright
 
-[MIT](LICENSE) © 2026 Remigiusz Nowacki
+© 2026 Remigiusz Nowacki. All rights reserved.
 
 Cursor is a trademark of Anysphere. This project is not affiliated with Cursor or Anysphere.
