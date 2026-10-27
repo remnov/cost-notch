@@ -2,10 +2,12 @@
 
 [![CI](https://github.com/remnov/cost-notch/actions/workflows/ci.yml/badge.svg)](https://github.com/remnov/cost-notch/actions/workflows/ci.yml)
 [![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black.svg)](https://github.com/remnov/cost-notch/releases)
+[![Intel](https://img.shields.io/badge/Intel-x86__64-black.svg)](https://github.com/remnov/cost-notch/releases)
+[![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-M--series-black.svg)](https://github.com/remnov/cost-notch/releases)
 
 macOS menu-bar and notch overlay for Cursor spend. Hover the camera notch (or the top edge of any display) to expand Current, Today, and recent queries.
 
-Compatible with Intel and Apple Silicon (M-series) Macs. The current build is Intel (`x86_64`) and runs on Apple Silicon through Rosetta.
+Supports Intel-based Macs and Apple Silicon (M-series). The current release is an Intel (`x86_64`) binary: native on Intel Macs, and on Apple Silicon through Rosetta.
 
 Not an official Cursor product.
 
