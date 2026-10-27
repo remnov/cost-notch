@@ -20,9 +20,13 @@ Path: `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb` (WAL
 
 Keys: `cursorAuth/accessToken`, `cursorAuth/refreshToken`, `cursorAuth/cachedEmail` / `cursorAuth/email`.
 
+Cursor 3.27.14 may store tokens as `cursor-safe-storage:v1:` + base64 Electron `v10` ciphertext. `CursorTokenDecoder` uses the **Cursor Safe Storage** service / **Cursor Key** account in macOS Keychain, PBKDF2-HMAC-SHA1 (`saltysalt`, 1003 iterations, 128-bit key), AES-CBC with a 16-space IV and PKCS7 padding. Keep plaintext compatibility. Reject unknown envelope/cipher versions before Keychain access. Decrypt only in memory. Polling disallows Keychain UI; explicit Refresh allows the standard macOS prompt.
+
+After a refresh failure, `.stale` retains the last ready data and error. Compact figures carry `*`, and the expanded overlay/menu shows the stale status. Preserve `lastUpdated` until success. Critical alerts consume only fresh `.ready` snapshots.
+
 Cookie: `WorkosCursorSessionToken={jwt.sub}::{jwt}`. If JWT `exp` is within 60s, refresh in memory:
 
-`POST https://api2.cursor.sh/oauth/token` with `grant_type=refresh_token`, public `client_id` `KbZUR41cY7W6zRSdpSUJ7I7mLYBKOCmB`. `shouldLogout: true` → sign-in error. Never persist the new access token.
+`POST https://api2.cursor.sh/oauth/token` with `grant_type=refresh_token`, public `client_id` `KbZUR41cY7W6zRSdpSUJ7I7mLYBKOCmB`. `shouldLogout: true` → session expired. Never persist the new access token.
 
 ## Usage APIs
 

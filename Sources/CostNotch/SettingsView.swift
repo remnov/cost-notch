@@ -59,12 +59,12 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(minWidth: 420, minHeight: 520)
         .onChange(of: settings.preferences.budgetDayBasis) { _ in
-            Task { await store.refresh() }
+            Task { await store.refresh(allowKeychainInteraction: false) }
         }
     }
 
     private static var version: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.1.0"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.1.1"
     }
 
     private func bind<Value>(_ keyPath: WritableKeyPath<NotchPreferences, Value>) -> Binding<Value> {

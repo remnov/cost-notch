@@ -50,20 +50,20 @@ public final class UsageStore: ObservableObject {
         pollTask?.cancel()
         pollTask = Task { [weak self] in
             while let self, !Task.isCancelled {
-                await self.refresh()
+                await self.refresh(allowKeychainInteraction: false)
                 let seconds = Double(self.settings.preferences.pollIntervalMinutes) * 60
                 try? await Task.sleep(for: .seconds(seconds))
             }
         }
     }
 
-    public func refresh() async {
+    public func refresh(allowKeychainInteraction: Bool = true) async {
         if isRefreshing { return }
         isRefreshing = true
         defer { isRefreshing = false }
         do {
             let auth = try await Task.detached(priority: .utility) {
-                try CursorSessionStore.readAuth()
+                try CursorSessionStore.readAuth(allowKeychainInteraction: allowKeychainInteraction)
             }.value
             let session = try await client.session(from: auth)
             let ready = try await client.loadUsage(
@@ -74,9 +74,9 @@ public final class UsageStore: ObservableObject {
             snapshot = .ready(ready)
             lastUpdated = Date()
         } catch let error as CursorCostError {
-            snapshot = .error(error.errorDescription ?? "Could not load usage")
+            snapshot = snapshot.failing(with: error.errorDescription ?? "Could not load usage")
         } catch {
-            snapshot = .error(CursorCostError.loadUsage.errorDescription ?? "Could not load usage")
+            snapshot = snapshot.failing(with: CursorCostError.loadUsage.errorDescription ?? "Could not load usage")
         }
     }
 }

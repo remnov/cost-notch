@@ -17,8 +17,14 @@ public actor CursorAPIClient {
 
     public func session(from auth: CursorAuthTokens, now: Date = Date()) async throws -> CursorSession {
         var jwt = CursorSessionStore.jwtFromStoredValue(auth.accessToken) ?? auth.accessToken
-        if CursorSessionStore.needsRefresh(jwt, now: now), let refreshToken = auth.refreshToken, !refreshToken.isEmpty {
+        if CursorSessionStore.needsRefresh(jwt, now: now) {
+            guard let refreshToken = auth.refreshToken, !refreshToken.isEmpty else {
+                throw CursorCostError.sessionExpired
+            }
             jwt = try await refreshAccessToken(refreshToken)
+            guard !CursorSessionStore.needsRefresh(jwt, now: now, leeway: 0) else {
+                throw CursorCostError.sessionExpired
+            }
         }
         return try CursorSessionStore.session(accessToken: jwt, email: auth.email)
     }
@@ -29,7 +35,7 @@ public actor CursorAPIClient {
             throw CursorCostError.signIn
         }
         if object["shouldLogout"] as? Bool == true {
-            throw CursorCostError.signIn
+            throw CursorCostError.sessionExpired
         }
         guard let token = JSON.string(object["access_token"]), !token.isEmpty else {
             throw CursorCostError.signIn

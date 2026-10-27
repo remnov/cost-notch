@@ -53,6 +53,20 @@ struct SessionTests {
     }
 
     @Test
+    func jwtExpiration_givenNumericOne_thenReturnsExpiredTimestamp() {
+        let given = jwt(exp: 1, sub: "user_123")
+
+        #expect(CursorSessionStore.jwtExpiration(given) == Date(timeIntervalSince1970: 1))
+    }
+
+    @Test
+    func jwtExpiration_givenBoolean_thenRejectsInvalidExpiration() {
+        let given = "aaa.\(base64URL(from: #"{"sub":"user_123","exp":true}"#)).sig"
+
+        #expect(CursorSessionStore.jwtExpiration(given) == nil)
+    }
+
+    @Test
     func parseRefreshResponse_givenAccessToken_thenReturnsToken() throws {
         let given = try JSONSerialization.data(withJSONObject: [
             "access_token": "new-access-jwt",
@@ -65,13 +79,13 @@ struct SessionTests {
     }
 
     @Test
-    func parseRefreshResponse_givenShouldLogout_thenThrowsSignIn() throws {
+    func parseRefreshResponse_givenShouldLogout_thenThrowsSessionExpired() throws {
         let given = try JSONSerialization.data(withJSONObject: [
             "access_token": "",
             "shouldLogout": true,
         ])
 
-        #expect(throws: CursorCostError.signIn) {
+        #expect(throws: CursorCostError.sessionExpired) {
             try CursorAPIClient.parseRefreshResponse(given)
         }
     }

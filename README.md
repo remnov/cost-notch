@@ -51,15 +51,19 @@ Installers:
 ./package.sh
 ```
 
-Writes `dist/Cost-Notch-1.1.0.dmg` and `dist/Cost-Notch-1.1.0.pkg` (or `artifacts/` if `dist/` is not writable).
+Writes `dist/Cost-Notch-1.1.1.dmg` and `dist/Cost-Notch-1.1.1.pkg` (or `artifacts/` if `dist/` is not writable).
 
 Architecture and overlay rules: [`AGENTS.md`](AGENTS.md).
 
-The app is a menu extra (no Dock icon). Quit from the menu-bar item. If spend shows **N/A**, sign in to Cursor on this Mac and choose **Refresh**.
+The app is a menu extra (no Dock icon). Quit from the menu-bar item. Sign in to Cursor on this Mac, then choose **Refresh** in Cost Notch. For encrypted Cursor sessions, macOS may ask permission to read **Cursor Safe Storage** in your Keychain. Allow access to load usage. The encryption password is cached only for the running app, so allowing access once is sufficient until restart. Background refresh never opens permission prompts; choose **Refresh** again if access was denied or the Keychain was locked.
+
+If a refresh fails after usage has loaded, the app keeps the last figures, marks compact values with `*`, and shows **Stale** with the error. These figures remain available until a successful refresh or app restart. Unsupported encryption formats ask you to update Cost Notch instead of asking you to sign in again.
 
 ## Privacy
 
-- Reads `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb` (session token only, read-only)
+- Reads `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb` (session tokens and account email, read-only)
+- Supports legacy plaintext tokens and Cursor's `cursor-safe-storage:v1:` / Electron `v10` encrypted tokens using the **Cursor Safe Storage** / **Cursor Key** Keychain item
+- Keeps decrypted credentials in memory; never writes them back to Cursor's database or to app preferences
 - Calls `https://cursor.com/api/usage-summary` and `https://cursor.com/api/dashboard/get-filtered-usage-events`
 - Treat totals as an overlay, not an invoice
 

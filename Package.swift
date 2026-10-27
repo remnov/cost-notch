@@ -13,6 +13,8 @@ let package = Package(
             name: "CursorCostCore",
             linkerSettings: [
                 .linkedLibrary("sqlite3"),
+                .linkedFramework("LocalAuthentication"),
+                .linkedFramework("Security"),
             ]
         ),
         .executableTarget(
@@ -22,7 +24,11 @@ let package = Package(
         ),
         .testTarget(
             name: "CursorCostCoreTests",
-            dependencies: ["CursorCostCore"]
+            dependencies: ["CursorCostCore"],
+            linkerSettings: [
+                .linkedLibrary("sqlite3"),
+                .linkedFramework("Security"),
+            ]
         ),
     ]
 )
