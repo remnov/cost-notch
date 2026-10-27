@@ -18,11 +18,16 @@ public enum OverlayHotspot {
         screenFrame: CGRect,
         collapsedFrame: CGRect
     ) -> Bool {
-        topEdgeFrame(screenFrame: screenFrame).contains(point)
+        guard screenFrame.contains(point) else { return false }
+        return topEdgeFrame(screenFrame: screenFrame).contains(point)
             || collapsedFrame.insetBy(dx: -16, dy: -6).contains(point)
     }
 
-    public static func screenFrame(containing point: CGPoint, screens: [CGRect]) -> CGRect? {
-        screens.first { $0.contains(point) }
+    public static func pickOverlayScreen(
+        builtIn: CGRect?,
+        notched: CGRect?,
+        fallback: CGRect?
+    ) -> CGRect? {
+        builtIn ?? notched ?? fallback
     }
 }

@@ -5,7 +5,7 @@
 [![Intel](https://img.shields.io/badge/Intel-x86__64-black.svg)](https://github.com/remnov/cost-notch/releases)
 [![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-M--series-black.svg)](https://github.com/remnov/cost-notch/releases)
 
-macOS menu-bar and notch overlay for Cursor spend. Hover the camera notch (or the top edge of any display) to expand Current, Today, and recent queries.
+macOS menu-bar and notch overlay for Cursor spend. Hover the camera notch on the Mac display to expand Current, Today, and recent queries. The overlay stays on that screen and does not appear on other monitors.
 
 Supports Intel-based Macs and Apple Silicon (M-series). The current release is an Intel (`x86_64`) binary: native on Intel Macs, and on Apple Silicon through Rosetta.
 

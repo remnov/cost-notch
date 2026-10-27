@@ -43,8 +43,8 @@ Spend tones: green under cap, red at/over. Percent Current is red at ≥ 100%. `
 
 ## Overlay UX
 
-- Collapsed pill: compact Current on the left of the camera gap. After collapse, snap back to the notched/preferred screen. Non-notch screens are hover-to-show only.
-- Expand: pointer on the top ~10px of **any** display, or on the collapsed pill. Panel relocates to that screen.
+- Collapsed pill: compact Current on the left of the camera gap on the built-in Mac screen (`CGDisplayIsBuiltin`, then notched, then main). The overlay never relocates to other monitors.
+- Expand: pointer on the top ~10px of that Mac screen, or on the collapsed pill. Hovering other displays does not show or move the overlay.
 - Expanded: CURSOR card with Current/Today bars (fill clamped to 100%), recents, Refresh / Dashboard / Settings. `NotchPanel.canBecomeKey` must stay `true` or tray buttons fail.
 - Pass hits through expanded shadow gutters (`NotchTrackingView.interactiveInset`).
 - Menu extras: compact chips (`currentCompact`, `todayCompact`); full strings in the dropdown. Subscribe to `$snapshot`, not only `objectWillChange`.
