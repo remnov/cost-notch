@@ -2,9 +2,6 @@
 
 Current version is `Sources/CostNotch/Info.plist`: `CFBundleShortVersionString` (e.g. `1.1.0`) and `CFBundleVersion` (integer, bump every ship).
 
-Repo: https://github.com/remnov/cost-notch  
-This GitHub account is an **Enterprise Managed User** — repos stay **private**. Public OSS needs a personal GitHub user or an org that allows public repos.
-
 ## 0. One-time Apple setup
 
 You need a paid Apple Developer account and the **Team ID** (10 characters, Membership details).
