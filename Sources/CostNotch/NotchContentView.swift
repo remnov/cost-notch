@@ -72,16 +72,16 @@ struct NotchContentView: View {
                 }
             }
 
-            providerSection(CostProvider.cursor.title) {
+            providerSection(presentation.providerTitle) {
                 spendBarRow(
-                    title: "Current",
+                    title: presentation.currentLabel,
                     value: presentation.currentText,
                     tone: presentation.currentTone,
                     progress: presentation.currentProgress
                 )
                 if let today = presentation.todayText {
                     spendBarRow(
-                        title: "Today",
+                        title: presentation.todayLabel,
                         value: today,
                         tone: presentation.todayTone,
                         progress: presentation.todayProgress
@@ -126,7 +126,7 @@ struct NotchContentView: View {
                     Task { await store.refresh() }
                 }
                 notchButton(title: "Dashboard") {
-                    NSWorkspace.shared.open(CursorLinks.dashboard)
+                    NSWorkspace.shared.open(store.dashboardURL)
                 }
                 notchButton(title: "Settings") {
                     onOpenSettings()

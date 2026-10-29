@@ -149,7 +149,38 @@ public enum UsageMapper {
             isUnlimited: unlimited,
             includedLine: pools.included,
             onDemandLine: pools.onDemand,
-            recentQueries: recentQueries
+            recentQueries: recentQueries,
+            provider: .cursor
+        )
+    }
+
+    public static func buildCodexUsageReady(usage: Any, email: String? = nil) -> UsageReady {
+        let object = JSON.object(usage)
+        let credits = JSON.object(object?["credits"])
+        let unlimited = JSON.bool(credits?["unlimited"]) ?? false
+        let windows = readCodexWindows(object?["rate_limit"])
+        let current = pickCodexCurrentWindow(windows)
+        let secondary = pickCodexSecondaryWindow(windows, current: current)
+        let quotas = [current, secondary].compactMap { quotaFromCodexWindow($0) }
+        let resolvedEmail = JSON.string(object?["email"]) ?? email
+        return UsageReady(
+            email: resolvedEmail,
+            plan: JSON.string(object?["plan_type"]),
+            spendDisplay: .percent,
+            includedQuotas: quotas,
+            usedUsd: 0,
+            limitUsd: nil,
+            remainingUsd: nil,
+            todayUsedUsd: nil,
+            dailyBudgetUsd: nil,
+            workingDaysLeft: nil,
+            billingCycleStart: nil,
+            billingCycleEnd: nil,
+            isUnlimited: unlimited,
+            includedLine: includedLineFromQuotas(quotas),
+            onDemandLine: codexCreditsLine(credits),
+            recentQueries: [],
+            provider: .codex
         )
     }
 
@@ -171,7 +202,10 @@ public enum UsageMapper {
                 statusMessage: "Loading usage…",
                 isLoading: true,
                 plan: nil,
-                email: nil
+                email: nil,
+                currentLabel: preferences.costProvider.currentLabel,
+                todayLabel: preferences.costProvider.secondaryLabel,
+                providerTitle: preferences.costProvider.title
             )
         case .error(let message):
             return UsagePresentation(
@@ -184,7 +218,10 @@ public enum UsageMapper {
                 statusMessage: message,
                 isLoading: refreshing,
                 plan: nil,
-                email: nil
+                email: nil,
+                currentLabel: preferences.costProvider.currentLabel,
+                todayLabel: preferences.costProvider.secondaryLabel,
+                providerTitle: preferences.costProvider.title
             )
         case .stale(let data, let message):
             var presentation = presentation(.ready(data), now: now, refreshing: refreshing, preferences: preferences)
@@ -194,6 +231,9 @@ public enum UsageMapper {
             presentation.todayCompact = presentation.todayCompact.map { $0 + "*" }
             return presentation
         case .ready(let data):
+            if data.provider == .codex {
+                return codexPresentation(data, refreshing: refreshing, preferences: preferences)
+            }
             let adjusted = applyBudgetDayBasis(data, basis: preferences.budgetDayBasis, now: now)
             let todayVisible =
                 !preferences.minimalMode
@@ -223,7 +263,10 @@ public enum UsageMapper {
                 todayProgress: todayVisible
                     ? todayProgress(adjusted, now: now, basis: preferences.budgetDayBasis)
                     : nil,
-                todayCompact: todayVisible ? todayCompact(adjusted, now: now, basis: preferences.budgetDayBasis) : nil
+                todayCompact: todayVisible ? todayCompact(adjusted, now: now, basis: preferences.budgetDayBasis) : nil,
+                currentLabel: CostProvider.cursor.currentLabel,
+                todayLabel: CostProvider.cursor.secondaryLabel,
+                providerTitle: CostProvider.cursor.title
             )
         }
     }
@@ -792,7 +835,131 @@ private extension UsageMapper {
         if let plan = data.plan, !plan.isEmpty { parts.append(plan) }
         if let included = data.includedLine { parts.append(included) }
         if let onDemand = data.onDemandLine { parts.append(onDemand) }
-        return parts.isEmpty ? "Cursor spend" : parts.joined(separator: " · ")
+        return parts.isEmpty ? "\(data.provider.title) spend" : parts.joined(separator: " · ")
+    }
+
+    static let fiveHourWindowSeconds: Double = 18_000
+    static let weeklyWindowSeconds: Double = 604_800
+
+    struct CodexWindow: Equatable {
+        var seconds: Double
+        var percent: Double
+    }
+
+    static func readCodexWindows(_ raw: Any?) -> [CodexWindow] {
+        guard let object = JSON.object(raw) else { return [] }
+        return [object["primary_window"], object["secondary_window"]].compactMap(readCodexWindow)
+    }
+
+    static func readCodexWindow(_ raw: Any?) -> CodexWindow? {
+        guard let object = JSON.object(raw), let percent = JSON.number(object["used_percent"]) else {
+            return nil
+        }
+        return CodexWindow(
+            seconds: JSON.number(object["limit_window_seconds"]) ?? 0,
+            percent: percent
+        )
+    }
+
+    static func pickCodexCurrentWindow(_ windows: [CodexWindow]) -> CodexWindow? {
+        windows.first { $0.seconds == fiveHourWindowSeconds }
+            ?? windows.min(by: { $0.seconds < $1.seconds })
+            ?? windows.first
+    }
+
+    static func pickCodexSecondaryWindow(_ windows: [CodexWindow], current: CodexWindow?) -> CodexWindow? {
+        let remaining = windows.filter { $0 != current }
+        return remaining.first { $0.seconds == weeklyWindowSeconds } ?? remaining.first
+    }
+
+    static func quotaFromCodexWindow(_ window: CodexWindow?) -> IncludedQuota? {
+        guard let window else { return nil }
+        return IncludedQuota(
+            name: codexWindowName(window.seconds),
+            used: window.percent,
+            limit: 100,
+            percent: roundPercent(window.percent)
+        )
+    }
+
+    static func codexWindowName(_ seconds: Double) -> String {
+        switch seconds {
+        case fiveHourWindowSeconds:
+            return "5-hour"
+        case weeklyWindowSeconds:
+            return "Weekly"
+        default:
+            break
+        }
+        if seconds >= 86_400 {
+            let days = max(1, Int((seconds / 86_400).rounded()))
+            return days == 1 ? "1-day" : "\(days)-day"
+        }
+        if seconds >= 3_600 {
+            let hours = max(1, Int((seconds / 3_600).rounded()))
+            return hours == 1 ? "1-hour" : "\(hours)-hour"
+        }
+        if seconds > 0 {
+            let minutes = max(1, Int((seconds / 60).rounded()))
+            return "\(minutes)-min"
+        }
+        return "Window"
+    }
+
+    static func codexCreditsLine(_ credits: [String: Any]?) -> String? {
+        guard let credits, JSON.bool(credits["has_credits"]) == true else {
+            return nil
+        }
+        if let amount = JSON.number(credits["balance"]) {
+            return Formatting.dollars(amount)
+        }
+        return JSON.string(credits["balance"])
+    }
+
+    static func codexPresentation(
+        _ data: UsageReady,
+        refreshing: Bool,
+        preferences: NotchPreferences
+    ) -> UsagePresentation {
+        let currentQuota = data.includedQuotas.first
+        let secondaryQuota = data.includedQuotas.dropFirst().first
+        if data.isUnlimited {
+            return UsagePresentation(
+                currentText: "Unlimited",
+                currentCompact: "∞",
+                todayText: nil,
+                currentTone: .green,
+                todayTone: .default,
+                recent: [],
+                statusMessage: statusMessage(data),
+                isLoading: refreshing,
+                plan: data.plan,
+                email: data.email,
+                currentLabel: currentQuota?.name ?? CostProvider.codex.currentLabel,
+                todayLabel: secondaryQuota?.name ?? CostProvider.codex.secondaryLabel,
+                providerTitle: CostProvider.codex.title
+            )
+        }
+        let todayVisible = !preferences.minimalMode && preferences.showToday && secondaryQuota != nil
+        let currentPercent = currentQuota?.percent ?? 0
+        return UsagePresentation(
+            currentText: currentQuota == nil ? "N/A" : "\(Formatting.percentPoint(currentPercent)) / 100%",
+            currentCompact: currentQuota == nil ? "N/A" : Formatting.percentPoint(currentPercent),
+            todayText: todayVisible ? secondaryQuota.map { "\(Formatting.percentPoint($0.percent)) / 100%" } : nil,
+            currentTone: currentQuota == nil ? .default : spendTone(used: currentPercent, cap: 100),
+            todayTone: todayVisible ? spendTone(used: secondaryQuota?.percent ?? 0, cap: 100) : .default,
+            recent: [],
+            statusMessage: statusMessage(data),
+            isLoading: refreshing,
+            plan: data.plan,
+            email: data.email,
+            currentProgress: currentQuota == nil ? nil : ratio(used: currentPercent, cap: 100),
+            todayProgress: todayVisible ? ratio(used: secondaryQuota?.percent ?? 0, cap: 100) : nil,
+            todayCompact: todayVisible ? secondaryQuota.map { Formatting.percentPoint($0.percent) } : nil,
+            currentLabel: currentQuota?.name ?? CostProvider.codex.currentLabel,
+            todayLabel: secondaryQuota?.name ?? CostProvider.codex.secondaryLabel,
+            providerTitle: CostProvider.codex.title
+        )
     }
 }
 

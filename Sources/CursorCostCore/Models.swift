@@ -95,6 +95,7 @@ public struct UsageReady: Sendable, Equatable {
     public var includedLine: String?
     public var onDemandLine: String?
     public var recentQueries: [UsageQuery]
+    public var provider: CostProvider
 
     public init(
         email: String?,
@@ -112,7 +113,8 @@ public struct UsageReady: Sendable, Equatable {
         isUnlimited: Bool,
         includedLine: String?,
         onDemandLine: String?,
-        recentQueries: [UsageQuery]
+        recentQueries: [UsageQuery],
+        provider: CostProvider = .cursor
     ) {
         self.email = email
         self.plan = plan
@@ -130,6 +132,7 @@ public struct UsageReady: Sendable, Equatable {
         self.includedLine = includedLine
         self.onDemandLine = onDemandLine
         self.recentQueries = recentQueries
+        self.provider = provider
     }
 }
 
@@ -186,6 +189,9 @@ public struct UsagePresentation: Sendable, Equatable {
     public var currentProgress: Double?
     public var todayProgress: Double?
     public var todayCompact: String?
+    public var currentLabel: String
+    public var todayLabel: String
+    public var providerTitle: String
 
     public init(
         currentText: String,
@@ -200,7 +206,10 @@ public struct UsagePresentation: Sendable, Equatable {
         email: String?,
         currentProgress: Double? = nil,
         todayProgress: Double? = nil,
-        todayCompact: String? = nil
+        todayCompact: String? = nil,
+        currentLabel: String = "Current",
+        todayLabel: String = "Today",
+        providerTitle: String = "Cursor"
     ) {
         self.currentText = currentText
         self.currentCompact = currentCompact
@@ -216,6 +225,9 @@ public struct UsagePresentation: Sendable, Equatable {
         self.currentProgress = currentProgress
         self.todayProgress = todayProgress
         self.todayCompact = todayCompact
+        self.currentLabel = currentLabel
+        self.todayLabel = todayLabel
+        self.providerTitle = providerTitle
     }
 }
 
@@ -241,6 +253,28 @@ public struct CursorAuthTokens: Sendable, Equatable {
     }
 }
 
+public struct CodexAuthTokens: Sendable, Equatable {
+    public var accessToken: String
+    public var refreshToken: String?
+    public var idToken: String?
+    public var accountId: String?
+    public var email: String?
+
+    public init(
+        accessToken: String,
+        refreshToken: String?,
+        idToken: String?,
+        accountId: String?,
+        email: String?
+    ) {
+        self.accessToken = accessToken
+        self.refreshToken = refreshToken
+        self.idToken = idToken
+        self.accountId = accountId
+        self.email = email
+    }
+}
+
 public enum CursorCostError: Error, Equatable, LocalizedError {
     case signIn
     case sessionRead
@@ -254,6 +288,9 @@ public enum CursorCostError: Error, Equatable, LocalizedError {
     case loadUsage
     case cancelled
     case httpStatus(Int)
+    case signInCodex
+    case sessionReadCodex
+    case sessionExpiredCodex
 
     public var errorDescription: String? {
         switch self {
@@ -285,6 +322,12 @@ public enum CursorCostError: Error, Equatable, LocalizedError {
             return "Cursor denied usage access. Check your account permissions."
         case .httpStatus:
             return "Could not load usage"
+        case .signInCodex:
+            return "Sign in to Codex. Run codex login, then Refresh."
+        case .sessionReadCodex:
+            return "Could not read Codex session"
+        case .sessionExpiredCodex:
+            return "Codex session expired. Run codex login, then Refresh."
         }
     }
 }
@@ -294,13 +337,47 @@ public enum BudgetDayBasis: String, Sendable, Codable {
     case calendarDays
 }
 
-public enum CostProvider: String, Sendable, CaseIterable {
+public enum CostProvider: String, Sendable, Codable, CaseIterable {
     case cursor
+    case codex
 
     public var title: String {
         switch self {
         case .cursor:
             return "Cursor"
+        case .codex:
+            return "Codex"
         }
+    }
+
+    public var currentLabel: String {
+        switch self {
+        case .cursor:
+            return "Current"
+        case .codex:
+            return "5-hour"
+        }
+    }
+
+    public var secondaryLabel: String {
+        switch self {
+        case .cursor:
+            return "Today"
+        case .codex:
+            return "Weekly"
+        }
+    }
+
+    public var dashboardURL: URL {
+        switch self {
+        case .cursor:
+            return URL(string: "https://cursor.com/dashboard")!
+        case .codex:
+            return URL(string: "https://chatgpt.com/codex")!
+        }
+    }
+
+    public var dashboardMenuTitle: String {
+        "Open \(title) Dashboard"
     }
 }

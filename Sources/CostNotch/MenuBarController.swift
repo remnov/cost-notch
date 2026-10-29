@@ -71,11 +71,11 @@ final class MenuBarController: NSObject {
     private func makeMenu() -> NSMenu {
         let menu = NSMenu()
         let presentation = store.presentation
-        menu.addItem(header("Cursor"))
+        menu.addItem(header(presentation.providerTitle))
         menu.addItem(header(presentation.statusMessage))
-        menu.addItem(header("Current  \(presentation.currentText)"))
+        menu.addItem(header("\(presentation.currentLabel)  \(presentation.currentText)"))
         if let today = presentation.todayText {
-            menu.addItem(header("Today  \(today)"))
+            menu.addItem(header("\(presentation.todayLabel)  \(today)"))
         }
         if !presentation.recent.isEmpty {
             menu.addItem(.separator())
@@ -86,7 +86,7 @@ final class MenuBarController: NSObject {
         menu.addItem(.separator())
         menu.addItem(action("Refresh", #selector(refresh)))
         menu.addItem(action("Settings…", #selector(openSettings)))
-        menu.addItem(action("Open Cursor Dashboard", #selector(openDashboard)))
+        menu.addItem(action(store.dashboardMenuTitle, #selector(openDashboard)))
         menu.addItem(.separator())
         menu.addItem(action("Quit Cost Notch", #selector(quit)))
         return menu
@@ -123,7 +123,7 @@ final class MenuBarController: NSObject {
     }
 
     @objc private func openDashboard() {
-        NSWorkspace.shared.open(CursorLinks.dashboard)
+        NSWorkspace.shared.open(store.dashboardURL)
     }
 
     @objc private func quit() {
