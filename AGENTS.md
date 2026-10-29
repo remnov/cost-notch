@@ -51,15 +51,15 @@ Windows: identify by `limit_window_seconds` (18000 = 5-hour, 604800 = weekly), n
 
 Refresh in memory: `POST https://auth.openai.com/oauth/token` JSON `grant_type=refresh_token`, public `client_id` `app_EMoamEEZ73f0CkXaXp7hrann`. Never persist the new access token.
 
-Settings `costProvider` chooses Cursor or Codex for the overlay/menu. Switching resets the snapshot and restarts polling.
+Settings `costProvider` chooses Cursor or Codex for the overlay/menu. `dualView` shows both at once. `pillLeftProvider` is the compact Current left of the camera gap; the other provider sits on the right. Expanded overlay lists cards in that order. Switching provider or dual view restarts polling; each provider keeps its own snapshot and stale state.
 
 ## Overlay UX
 
-- Collapsed pill: compact Current on the left of the camera gap on the built-in Mac screen (`CGDisplayIsBuiltin`, then notched, then main). The overlay never relocates to other monitors.
+- Collapsed pill: compact Current on the left of the camera gap on the built-in Mac screen (`CGDisplayIsBuiltin`, then notched, then main). Dual view also fills the right wing. The overlay never relocates to other monitors.
 - Expand: pointer on the top ~10px of that Mac screen, or on the collapsed pill. Hovering other displays does not show or move the overlay.
-- Expanded: provider card (Cursor or Codex) with Current/Today bars, or 5-hour/Weekly for Codex (fill clamped to 100%), recents (Cursor), Refresh / Dashboard / Settings. `NotchPanel.canBecomeKey` must stay `true` or tray buttons fail.
+- Expanded: provider card(s) with Current/Today bars, or 5-hour/Weekly for Codex (fill clamped to 100%), recents (Cursor), Refresh / Dashboard / Settings. Dual view shows both cards. `NotchPanel.canBecomeKey` must stay `true` or tray buttons fail.
 - Pass hits through expanded shadow gutters (`NotchTrackingView.interactiveInset`).
-- Menu extras: compact chips (`currentCompact`, `todayCompact`); full strings in the dropdown. Subscribe to `$snapshot`, not only `objectWillChange`.
+- Menu extras: compact chips (`currentCompact`, `todayCompact`); dual view uses each provider’s Current. Full strings in the dropdown. Subscribe to `$cursorSnapshot` / `$codexSnapshot`, not only `objectWillChange`.
 - Settings via overlay, menu, or ⌘,. `LSUIElement` — no Dock icon except while Settings/alert is frontmost. Closing Settings must restore `.accessory` unless an alert still needs `.regular`.
 
 ## Conventions

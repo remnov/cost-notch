@@ -5,7 +5,7 @@
 [![Intel](https://img.shields.io/badge/Intel-x86__64-black.svg)](https://github.com/remnov/cost-notch/releases)
 [![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-M--series-black.svg)](https://github.com/remnov/cost-notch/releases)
 
-macOS menu-bar and notch overlay for Cursor and Codex spend. Choose the provider in Settings. Hover the camera notch on the Mac display to expand Current, Today, and recent queries (Cursor) or 5-hour and weekly rate limits (Codex). The overlay stays on that screen and does not appear on other monitors.
+macOS menu-bar and notch overlay for Cursor and Codex spend. Choose one provider in Settings, or show both at once and pick which compact figure sits left or right of the camera gap. Hover the camera notch on the Mac display to expand Current, Today, and recent queries (Cursor) or 5-hour and weekly rate limits (Codex). The overlay stays on that screen and does not appear on other monitors.
 
 Supports Intel-based Macs and Apple Silicon (M-series). The current release is an Intel (`x86_64`) binary: native on Intel Macs, and on Apple Silicon through Rosetta.
 
@@ -41,6 +41,7 @@ Signed + notarized builds (Apple Team ID): see **[RELEASE.md](RELEASE.md)**.
 
 - Collapsed notch chip with compact Current spend
 - Expanded provider card: Current / Today progress bars for Cursor, 5-hour / Weekly for Codex (green under cap, red over)
+- Optional dual view: Cursor and Codex at once, with notch-pill left/right assignment
 - Recent queries (Cursor), Refresh, Dashboard, Settings
 - Menu-bar chips (works in Agent view and on external displays)
 - Reads the local Cursor session or `~/.codex/auth.json`; no extra login

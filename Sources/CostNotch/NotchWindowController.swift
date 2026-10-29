@@ -49,6 +49,14 @@ final class NotchWindowController: NSObject {
                 self?.applyVisibility(show)
             }
             .store(in: &cancellables)
+        settings.$preferences
+            .map(\.dualView)
+            .removeDuplicates()
+            .dropFirst()
+            .sink { [weak self] _ in
+                self?.reposition(animated: true)
+            }
+            .store(in: &cancellables)
     }
 
     func destroy() {
@@ -150,7 +158,7 @@ final class NotchWindowController: NSObject {
         }
         if isExpanded {
             viewModel.geometry = geometry
-            panel.setFrame(geometry.expandedFrame(), display: true)
+            panel.setFrame(geometry.expandedFrame(dualView: dualView), display: true)
             return
         }
         if screenChanged {
@@ -161,7 +169,7 @@ final class NotchWindowController: NSObject {
         viewModel.isExpanded = true
         viewModel.geometry = geometry
         trackingView?.interactiveInset = geometry.shadowPadding
-        animate(to: geometry.expandedFrame())
+        animate(to: geometry.expandedFrame(dualView: dualView))
         Task { await store.refresh() }
     }
 
@@ -203,12 +211,18 @@ final class NotchWindowController: NSObject {
     private func reposition(animated: Bool) {
         guard let screen = NotchGeometry.preferredScreen() else { return }
         viewModel.geometry = NotchGeometry.detect(screen: screen)
-        let frame = isExpanded ? viewModel.geometry.expandedFrame() : viewModel.geometry.collapsedFrame()
+        let frame = isExpanded
+            ? viewModel.geometry.expandedFrame(dualView: dualView)
+            : viewModel.geometry.collapsedFrame()
         if animated {
             animate(to: frame)
         } else {
             panel.setFrame(frame, display: true)
         }
+    }
+
+    private var dualView: Bool {
+        settings.preferences.dualView
     }
 
     private func animate(to frame: NSRect) {

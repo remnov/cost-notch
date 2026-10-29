@@ -188,8 +188,10 @@ public enum UsageMapper {
         _ snapshot: UsageSnapshot,
         now: Date = Date(),
         refreshing: Bool = false,
-        preferences: NotchPreferences = .standard
+        preferences: NotchPreferences = .standard,
+        provider: CostProvider? = nil
     ) -> UsagePresentation {
+        let labels = provider ?? preferences.costProvider
         switch snapshot {
         case .loading:
             return UsagePresentation(
@@ -203,9 +205,9 @@ public enum UsageMapper {
                 isLoading: true,
                 plan: nil,
                 email: nil,
-                currentLabel: preferences.costProvider.currentLabel,
-                todayLabel: preferences.costProvider.secondaryLabel,
-                providerTitle: preferences.costProvider.title
+                currentLabel: labels.currentLabel,
+                todayLabel: labels.secondaryLabel,
+                providerTitle: labels.title
             )
         case .error(let message):
             return UsagePresentation(
@@ -219,12 +221,12 @@ public enum UsageMapper {
                 isLoading: refreshing,
                 plan: nil,
                 email: nil,
-                currentLabel: preferences.costProvider.currentLabel,
-                todayLabel: preferences.costProvider.secondaryLabel,
-                providerTitle: preferences.costProvider.title
+                currentLabel: labels.currentLabel,
+                todayLabel: labels.secondaryLabel,
+                providerTitle: labels.title
             )
         case .stale(let data, let message):
-            var presentation = presentation(.ready(data), now: now, refreshing: refreshing, preferences: preferences)
+            var presentation = presentation(.ready(data), now: now, refreshing: refreshing, preferences: preferences, provider: provider)
             presentation.isStale = true
             presentation.statusMessage = "Stale · \(message)"
             presentation.currentCompact += "*"

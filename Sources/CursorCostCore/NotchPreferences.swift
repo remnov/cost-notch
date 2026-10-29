@@ -15,6 +15,8 @@ public struct NotchPreferences: Equatable, Codable, Sendable {
     public var budgetDayBasis: BudgetDayBasis
     public var showNotch: Bool
     public var costProvider: CostProvider
+    public var dualView: Bool
+    public var pillLeftProvider: CostProvider
 
     public init(
         pollIntervalMinutes: Int = 1,
@@ -28,7 +30,9 @@ public struct NotchPreferences: Equatable, Codable, Sendable {
         criticalCostUsdThreshold: Double = 5,
         budgetDayBasis: BudgetDayBasis = .workingDays,
         showNotch: Bool = true,
-        costProvider: CostProvider = .cursor
+        costProvider: CostProvider = .cursor,
+        dualView: Bool = false,
+        pillLeftProvider: CostProvider = .cursor
     ) {
         self.pollIntervalMinutes = pollIntervalMinutes
         self.showToday = showToday
@@ -42,6 +46,8 @@ public struct NotchPreferences: Equatable, Codable, Sendable {
         self.budgetDayBasis = budgetDayBasis
         self.showNotch = showNotch
         self.costProvider = costProvider
+        self.dualView = dualView
+        self.pillLeftProvider = pillLeftProvider
         clamp()
     }
 
@@ -59,8 +65,22 @@ public struct NotchPreferences: Equatable, Codable, Sendable {
             criticalCostUsdThreshold: try container.decodeIfPresent(Double.self, forKey: .criticalCostUsdThreshold) ?? 5,
             budgetDayBasis: try container.decodeIfPresent(BudgetDayBasis.self, forKey: .budgetDayBasis) ?? .workingDays,
             showNotch: try container.decodeIfPresent(Bool.self, forKey: .showNotch) ?? true,
-            costProvider: try container.decodeIfPresent(CostProvider.self, forKey: .costProvider) ?? .cursor
+            costProvider: try container.decodeIfPresent(CostProvider.self, forKey: .costProvider) ?? .cursor,
+            dualView: try container.decodeIfPresent(Bool.self, forKey: .dualView) ?? false,
+            pillLeftProvider: try container.decodeIfPresent(CostProvider.self, forKey: .pillLeftProvider) ?? .cursor
         )
+    }
+
+    public var pillRightProvider: CostProvider {
+        pillLeftProvider.other
+    }
+
+    public var visibleProviders: [CostProvider] {
+        dualView ? [pillLeftProvider, pillRightProvider] : [costProvider]
+    }
+
+    public func shows(_ provider: CostProvider) -> Bool {
+        visibleProviders.contains(provider)
     }
 
     public var spikeTokenThresholdK: Int {
@@ -94,5 +114,7 @@ public struct NotchPreferences: Equatable, Codable, Sendable {
         case budgetDayBasis
         case showNotch
         case costProvider
+        case dualView
+        case pillLeftProvider
     }
 }

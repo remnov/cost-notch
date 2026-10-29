@@ -14,6 +14,7 @@ struct NotchGeometry: Equatable {
 
     var expandedWidth: CGFloat { 420 }
     var expandedHeight: CGFloat { 400 }
+    var dualExpandedHeight: CGFloat { 580 }
     var shadowPadding: CGFloat { 18 }
 
     static func detect(screen: NSScreen) -> NotchGeometry {
@@ -74,9 +75,9 @@ struct NotchGeometry: Equatable {
         )
     }
 
-    func expandedFrame() -> NSRect {
+    func expandedFrame(dualView: Bool = false) -> NSRect {
         let width = expandedWidth + shadowPadding * 2
-        let height = expandedHeight + shadowPadding
+        let height = (dualView ? dualExpandedHeight : expandedHeight) + shadowPadding
         return NSRect(
             x: screenFrame.midX - width / 2,
             y: screenFrame.maxY - height,

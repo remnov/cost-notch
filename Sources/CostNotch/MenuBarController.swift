@@ -25,10 +25,10 @@ final class MenuBarController: NSObject {
             currentItem.button?.imagePosition = .imageLeading
         }
         rebuildMenu()
-        store.$snapshot
-            .combineLatest(store.$isRefreshing)
+        store.$cursorSnapshot
+            .combineLatest(store.$codexSnapshot, store.$isRefreshing)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] _, _ in
+            .sink { [weak self] _, _, _ in
                 self?.render()
             }
             .store(in: &cancellables)
@@ -46,17 +46,23 @@ final class MenuBarController: NSObject {
     }
 
     private func render() {
-        let presentation = store.presentation
-        currentItem.button?.title = " \(presentation.currentCompact)"
-        currentItem.button?.toolTip = "Current · \(presentation.currentText)\n\(presentation.statusMessage)"
-        currentItem.button?.contentTintColor = NSColor.tone(presentation.currentTone)
+        let presentations = store.visiblePresentations
+        let left = presentations.first?.presentation ?? store.presentation
+        currentItem.button?.title = " \(left.currentCompact)"
+        currentItem.button?.toolTip = "\(left.providerTitle) · \(left.currentText)\n\(left.statusMessage)"
+        currentItem.button?.contentTintColor = NSColor.tone(left.currentTone)
 
-        if let today = presentation.todayCompact ?? presentation.todayText {
+        if store.isDualView, let right = presentations.dropFirst().first?.presentation {
+            todayItem.isVisible = true
+            todayItem.button?.title = " \(right.currentCompact)"
+            todayItem.button?.toolTip = "\(right.providerTitle) · \(right.currentText)\n\(right.statusMessage)"
+            todayItem.button?.contentTintColor = NSColor.tone(right.currentTone)
+        } else if let today = left.todayCompact ?? left.todayText {
             todayItem.isVisible = true
             todayItem.button?.title = " \(today)"
-            todayItem.button?.toolTip = (presentation.todayText.map { "Today · \($0)" } ?? "Today")
-                + "\n\(presentation.statusMessage)"
-            todayItem.button?.contentTintColor = NSColor.tone(presentation.todayTone)
+            todayItem.button?.toolTip = (left.todayText.map { "\(left.todayLabel) · \($0)" } ?? left.todayLabel)
+                + "\n\(left.statusMessage)"
+            todayItem.button?.contentTintColor = NSColor.tone(left.todayTone)
         } else {
             todayItem.isVisible = false
         }
@@ -70,7 +76,36 @@ final class MenuBarController: NSObject {
 
     private func makeMenu() -> NSMenu {
         let menu = NSMenu()
-        let presentation = store.presentation
+        let presentations = store.visiblePresentations
+        for (index, item) in presentations.enumerated() {
+            if index > 0 {
+                menu.addItem(.separator())
+            }
+            append(item.presentation, to: menu)
+        }
+        menu.addItem(.separator())
+        menu.addItem(action("Refresh", #selector(refresh)))
+        menu.addItem(action("Settings…", #selector(openSettings)))
+        if store.isDualView {
+            for item in presentations {
+                let menuItem = NSMenuItem(
+                    title: item.provider.dashboardMenuTitle,
+                    action: #selector(openProviderDashboard(_:)),
+                    keyEquivalent: ""
+                )
+                menuItem.target = self
+                menuItem.representedObject = item.provider.rawValue
+                menu.addItem(menuItem)
+            }
+        } else {
+            menu.addItem(action(store.dashboardMenuTitle, #selector(openDashboard)))
+        }
+        menu.addItem(.separator())
+        menu.addItem(action("Quit Cost Notch", #selector(quit)))
+        return menu
+    }
+
+    private func append(_ presentation: UsagePresentation, to menu: NSMenu) {
         menu.addItem(header(presentation.providerTitle))
         menu.addItem(header(presentation.statusMessage))
         menu.addItem(header("\(presentation.currentLabel)  \(presentation.currentText)"))
@@ -83,13 +118,6 @@ final class MenuBarController: NSObject {
                 menu.addItem(header("\(query.model)  \(query.text)"))
             }
         }
-        menu.addItem(.separator())
-        menu.addItem(action("Refresh", #selector(refresh)))
-        menu.addItem(action("Settings…", #selector(openSettings)))
-        menu.addItem(action(store.dashboardMenuTitle, #selector(openDashboard)))
-        menu.addItem(.separator())
-        menu.addItem(action("Quit Cost Notch", #selector(quit)))
-        return menu
     }
 
     private static func loadAppIcon() -> NSImage? {
@@ -124,6 +152,13 @@ final class MenuBarController: NSObject {
 
     @objc private func openDashboard() {
         NSWorkspace.shared.open(store.dashboardURL)
+    }
+
+    @objc private func openProviderDashboard(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String, let provider = CostProvider(rawValue: raw) else {
+            return
+        }
+        NSWorkspace.shared.open(store.dashboardURL(for: provider))
     }
 
     @objc private func quit() {

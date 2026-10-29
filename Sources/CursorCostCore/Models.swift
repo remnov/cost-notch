@@ -337,7 +337,7 @@ public enum BudgetDayBasis: String, Sendable, Codable {
     case calendarDays
 }
 
-public enum CostProvider: String, Sendable, Codable, CaseIterable {
+public enum CostProvider: String, Sendable, Codable, CaseIterable, Hashable {
     case cursor
     case codex
 
@@ -379,5 +379,14 @@ public enum CostProvider: String, Sendable, Codable, CaseIterable {
 
     public var dashboardMenuTitle: String {
         "Open \(title) Dashboard"
+    }
+
+    public var other: CostProvider {
+        switch self {
+        case .cursor:
+            return .codex
+        case .codex:
+            return .cursor
+        }
     }
 }

@@ -8,20 +8,28 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Provider") {
-                Picker("AI provider", selection: bind(\.costProvider)) {
-                    ForEach(CostProvider.allCases, id: \.self) { provider in
-                        Text(provider.title).tag(provider)
+                Toggle("Show Cursor and Codex together", isOn: bind(\.dualView))
+                if settings.preferences.dualView {
+                    Picker("Notch pill", selection: bind(\.pillLeftProvider)) {
+                        Text("Cursor left · Codex right").tag(CostProvider.cursor)
+                        Text("Codex left · Cursor right").tag(CostProvider.codex)
                     }
+                } else {
+                    Picker("AI provider", selection: bind(\.costProvider)) {
+                        ForEach(CostProvider.allCases, id: \.self) { provider in
+                            Text(provider.title).tag(provider)
+                        }
+                    }
+                    .pickerStyle(.segmented)
                 }
-                .pickerStyle(.segmented)
             }
 
             Section("Display") {
                 Toggle(showSecondaryTitle, isOn: bind(\.showToday))
                     .disabled(settings.preferences.minimalMode)
-                Toggle("Minimal mode (\(settings.preferences.costProvider.currentLabel) only)", isOn: bind(\.minimalMode))
+                Toggle(minimalModeTitle, isOn: bind(\.minimalMode))
                 Toggle("Show notch overlay", isOn: bind(\.showNotch))
-                if settings.preferences.costProvider == .cursor {
+                if showsCursor {
                     Stepper(value: bind(\.recentQueryCount), in: 1...10) {
                         Text("Recent queries: \(settings.preferences.recentQueryCount)")
                     }
@@ -29,7 +37,7 @@ struct SettingsView: View {
                 }
             }
 
-            if settings.preferences.costProvider == .cursor {
+            if showsCursor {
                 Section("Cursor") {
                     Toggle("Token-spike warning (!)", isOn: bind(\.showSpikeWarning))
                     Stepper(value: spikeK, in: 1...100_000, step: 100) {
@@ -47,7 +55,9 @@ struct SettingsView: View {
                         Text("Calendar days").tag(BudgetDayBasis.calendarDays)
                     }
                 }
-            } else {
+            }
+
+            if showsCodex {
                 Section("Codex") {
                     Text("Reads ~/.codex/auth.json from the Codex CLI. Sign in with Codex, then Refresh.")
                         .foregroundStyle(.secondary)
@@ -75,17 +85,38 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(minWidth: 420, minHeight: 520)
+        .frame(minWidth: 420, minHeight: 560)
         .onChange(of: settings.preferences.budgetDayBasis) { _ in
             Task { await store.refresh(allowKeychainInteraction: false) }
         }
         .onChange(of: settings.preferences.costProvider) { _ in
             Task { await store.refresh(allowKeychainInteraction: false) }
         }
+        .onChange(of: settings.preferences.dualView) { _ in
+            Task { await store.refresh(allowKeychainInteraction: false) }
+        }
+    }
+
+    private var showsCursor: Bool {
+        settings.preferences.shows(.cursor)
+    }
+
+    private var showsCodex: Bool {
+        settings.preferences.shows(.codex)
     }
 
     private var showSecondaryTitle: String {
-        "Show \(settings.preferences.costProvider.secondaryLabel)"
+        if settings.preferences.dualView {
+            return "Show Today / Weekly"
+        }
+        return "Show \(settings.preferences.costProvider.secondaryLabel)"
+    }
+
+    private var minimalModeTitle: String {
+        if settings.preferences.dualView {
+            return "Minimal mode (compact only)"
+        }
+        return "Minimal mode (\(settings.preferences.costProvider.currentLabel) only)"
     }
 
     private static var version: String {
