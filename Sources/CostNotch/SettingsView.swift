@@ -7,32 +7,60 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Display") {
-                Toggle("Show Today", isOn: bind(\.showToday))
-                    .disabled(settings.preferences.minimalMode)
-                Toggle("Minimal mode (Current only)", isOn: bind(\.minimalMode))
-                Toggle("Show notch overlay", isOn: bind(\.showNotch))
-                Stepper(value: bind(\.recentQueryCount), in: 1...10) {
-                    Text("Recent queries: \(settings.preferences.recentQueryCount)")
+            Section("Provider") {
+                Toggle("Show Cursor and Codex together", isOn: bind(\.dualView))
+                if settings.preferences.dualView {
+                    Picker("Notch pill", selection: bind(\.pillLeftProvider)) {
+                        Text("Cursor left · Codex right").tag(CostProvider.cursor)
+                        Text("Codex left · Cursor right").tag(CostProvider.codex)
+                    }
+                } else {
+                    Picker("AI provider", selection: bind(\.costProvider)) {
+                        ForEach(CostProvider.allCases, id: \.self) { provider in
+                            Text(provider.title).tag(provider)
+                        }
+                    }
+                    .pickerStyle(.segmented)
                 }
-                .disabled(settings.preferences.minimalMode)
             }
 
-            Section("Cursor") {
-                Toggle("Token-spike warning (!)", isOn: bind(\.showSpikeWarning))
-                Stepper(value: spikeK, in: 1...100_000, step: 100) {
-                    Text("Warn at \(settings.preferences.spikeTokenThresholdK)k tokens")
+            Section("Display") {
+                Toggle(showSecondaryTitle, isOn: bind(\.showToday))
+                    .disabled(settings.preferences.minimalMode)
+                Toggle(minimalModeTitle, isOn: bind(\.minimalMode))
+                Toggle("Show notch overlay", isOn: bind(\.showNotch))
+                if showsCursor {
+                    Stepper(value: bind(\.recentQueryCount), in: 1...10) {
+                        Text("Recent queries: \(settings.preferences.recentQueryCount)")
+                    }
+                    .disabled(settings.preferences.minimalMode)
                 }
-                Toggle("Critical alert", isOn: bind(\.showCriticalAlert))
-                Stepper(value: criticalK, in: 1...1_000_000, step: 500) {
-                    Text("Alert at \(settings.preferences.criticalTokenThresholdK)k tokens")
+            }
+
+            if showsCursor {
+                Section("Cursor") {
+                    Toggle("Token-spike warning (!)", isOn: bind(\.showSpikeWarning))
+                    Stepper(value: spikeK, in: 1...100_000, step: 100) {
+                        Text("Warn at \(settings.preferences.spikeTokenThresholdK)k tokens")
+                    }
+                    Toggle("Critical alert", isOn: bind(\.showCriticalAlert))
+                    Stepper(value: criticalK, in: 1...1_000_000, step: 500) {
+                        Text("Alert at \(settings.preferences.criticalTokenThresholdK)k tokens")
+                    }
+                    Stepper(value: criticalUsd, in: 0.01...500, step: 0.5) {
+                        Text("Alert at \(Formatting.dollars(settings.preferences.criticalCostUsdThreshold))")
+                    }
+                    Picker("Daily budget (Today cap)", selection: bind(\.budgetDayBasis)) {
+                        Text("Working days (Mon–Fri)").tag(BudgetDayBasis.workingDays)
+                        Text("Calendar days").tag(BudgetDayBasis.calendarDays)
+                    }
                 }
-                Stepper(value: criticalUsd, in: 0.01...500, step: 0.5) {
-                    Text("Alert at \(Formatting.dollars(settings.preferences.criticalCostUsdThreshold))")
-                }
-                Picker("Daily budget (Today cap)", selection: bind(\.budgetDayBasis)) {
-                    Text("Working days (Mon–Fri)").tag(BudgetDayBasis.workingDays)
-                    Text("Calendar days").tag(BudgetDayBasis.calendarDays)
+            }
+
+            if showsCodex {
+                Section("Codex") {
+                    Text("Reads ~/.codex/auth.json from the Codex CLI. Sign in with Codex, then Refresh.")
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -57,14 +85,42 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(minWidth: 420, minHeight: 520)
+        .frame(minWidth: 420, minHeight: 560)
         .onChange(of: settings.preferences.budgetDayBasis) { _ in
+            Task { await store.refresh(allowKeychainInteraction: false) }
+        }
+        .onChange(of: settings.preferences.costProvider) { _ in
+            Task { await store.refresh(allowKeychainInteraction: false) }
+        }
+        .onChange(of: settings.preferences.dualView) { _ in
             Task { await store.refresh(allowKeychainInteraction: false) }
         }
     }
 
+    private var showsCursor: Bool {
+        settings.preferences.shows(.cursor)
+    }
+
+    private var showsCodex: Bool {
+        settings.preferences.shows(.codex)
+    }
+
+    private var showSecondaryTitle: String {
+        if settings.preferences.dualView {
+            return "Show Today / Weekly"
+        }
+        return "Show \(settings.preferences.costProvider.secondaryLabel)"
+    }
+
+    private var minimalModeTitle: String {
+        if settings.preferences.dualView {
+            return "Minimal mode (compact only)"
+        }
+        return "Minimal mode (\(settings.preferences.costProvider.currentLabel) only)"
+    }
+
     private static var version: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.1.1"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.2.0"
     }
 
     private func bind<Value>(_ keyPath: WritableKeyPath<NotchPreferences, Value>) -> Binding<Value> {

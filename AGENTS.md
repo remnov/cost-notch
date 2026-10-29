@@ -1,6 +1,6 @@
 # Cost Notch — agent knowledge
 
-macOS 13+ menu-bar + notch overlay for AI spend. Bundle `local.cost-notch`, display name **Cost Notch**, executable `CostNotch`. Cursor is the first provider; Codex / Claude are future sections under the same overlay, not separate apps.
+macOS 13+ menu-bar + notch overlay for AI spend. Bundle `local.cost-notch`, display name **Cost Notch**, executable `CostNotch`. Cursor and Codex share one overlay; Claude is a future section, not a separate app.
 
 Version lives in `Sources/CostNotch/Info.plist` (`CFBundleShortVersionString` + `CFBundleVersion`). Bump both when shipping. `package.sh` reads the short version for DMG/PKG names.
 
@@ -41,13 +41,25 @@ Pool pick (`UsageMapper.pickUsagePool`):
 
 Spend tones: green under cap, red at/over. Percent Current is red at ≥ 100%. `showSpikeWarning` only affects recent-query `!` markers, never Current/Today colors.
 
+## Codex session
+
+Path: `$CODEX_HOME/auth.json`, else `~/.codex/auth.json`. File-based ChatGPT OAuth only (`tokens.access_token`). Optional `tokens.account_id` / JWT `chatgpt_account_id`. Reject API-key-only files.
+
+`GET https://chatgpt.com/backend-api/wham/usage` with `Authorization: Bearer`, `Accept: application/json`, optional `ChatGPT-Account-Id`. Do not follow redirects. Timeout 25s.
+
+Windows: identify by `limit_window_seconds` (18000 = 5-hour, 604800 = weekly), not primary/secondary names. Compact Current is the 5-hour window when present, else the shorter window. The second bar is weekly. `credits.unlimited` is Unlimited. No recent-query list.
+
+Refresh in memory: `POST https://auth.openai.com/oauth/token` JSON `grant_type=refresh_token`, public `client_id` `app_EMoamEEZ73f0CkXaXp7hrann`. Never persist the new access token.
+
+Settings `costProvider` chooses Cursor or Codex for the overlay/menu. `dualView` shows both at once. `pillLeftProvider` is the compact Current left of the camera gap; the other provider sits on the right. Expanded overlay lists cards in that order. Switching provider or dual view restarts polling; each provider keeps its own snapshot and stale state.
+
 ## Overlay UX
 
-- Collapsed pill: compact Current on the left of the camera gap on the built-in Mac screen (`CGDisplayIsBuiltin`, then notched, then main). The overlay never relocates to other monitors.
+- Collapsed pill: compact Current on the left of the camera gap on the built-in Mac screen (`CGDisplayIsBuiltin`, then notched, then main). Dual view also fills the right wing. The overlay never relocates to other monitors.
 - Expand: pointer on the top ~10px of that Mac screen, or on the collapsed pill. Hovering other displays does not show or move the overlay.
-- Expanded: CURSOR card with Current/Today bars (fill clamped to 100%), recents, Refresh / Dashboard / Settings. `NotchPanel.canBecomeKey` must stay `true` or tray buttons fail.
+- Expanded: provider card(s) with Current/Today bars, or 5-hour/Weekly for Codex (fill clamped to 100%), recents (Cursor), Refresh / Dashboard / Settings. Dual view shows both cards. `NotchPanel.canBecomeKey` must stay `true` or tray buttons fail.
 - Pass hits through expanded shadow gutters (`NotchTrackingView.interactiveInset`).
-- Menu extras: compact chips (`currentCompact`, `todayCompact`); full strings in the dropdown. Subscribe to `$snapshot`, not only `objectWillChange`.
+- Menu extras: compact chips (`currentCompact`, `todayCompact`); dual view uses each provider’s Current. Full strings in the dropdown. Subscribe to `$cursorSnapshot` / `$codexSnapshot`, not only `objectWillChange`.
 - Settings via overlay, menu, or ⌘,. `LSUIElement` — no Dock icon except while Settings/alert is frontmost. Closing Settings must restore `.accessory` unless an alert still needs `.regular`.
 
 ## Conventions

@@ -11,7 +11,7 @@ final class CriticalAlertController {
     init(settings: AppSettings, store: UsageStore, isSettingsVisible: @escaping () -> Bool = { false }) {
         self.settings = settings
         self.isSettingsVisible = isSettingsVisible
-        cancellable = store.$snapshot.sink { [weak self] snapshot in
+        cancellable = store.$cursorSnapshot.sink { [weak self] snapshot in
             self?.handle(snapshot)
         }
     }

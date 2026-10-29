@@ -9,7 +9,13 @@ struct NotchContentView: View {
 
     private var topRadius: CGFloat { viewModel.isExpanded ? 19 : 6 }
     private var bottomRadius: CGFloat { viewModel.isExpanded ? 24 : 14 }
-    private var presentation: UsagePresentation { store.presentation }
+    private var presentations: [(provider: CostProvider, presentation: UsagePresentation)] {
+        store.visiblePresentations
+    }
+
+    private var primary: UsagePresentation {
+        presentations.first?.presentation ?? store.presentation
+    }
 
     var body: some View {
         GeometryReader { _ in
@@ -17,7 +23,7 @@ struct NotchContentView: View {
                 if viewModel.isExpanded {
                     NotchShape(topCornerRadius: topRadius, bottomCornerRadius: bottomRadius)
                         .fill(Color.black)
-                        .shadow(color: toneColor(presentation.currentTone).opacity(0.18), radius: 10, y: 4)
+                        .shadow(color: toneColor(shadowTone).opacity(0.18), radius: 10, y: 4)
                         .padding(.horizontal, viewModel.geometry.shadowPadding)
                         .padding(.bottom, 8)
                 }
@@ -40,18 +46,14 @@ struct NotchContentView: View {
 
     private var collapsedContent: some View {
         HStack(spacing: 0) {
-            Text(presentation.currentCompact)
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundColor(toneColor(presentation.currentTone))
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.65)
-                .frame(maxWidth: .infinity, alignment: .center)
-
+            compactChip(presentations.first?.presentation)
             Color.clear.frame(width: max(viewModel.geometry.notchWidth - 28, 40))
-
-            Color.clear
-                .frame(maxWidth: .infinity)
+            if store.isDualView {
+                compactChip(presentations.dropFirst().first?.presentation)
+            } else {
+                Color.clear
+                    .frame(maxWidth: .infinity)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
@@ -65,58 +67,15 @@ struct NotchContentView: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white)
                 Spacer()
-                if store.isRefreshing || presentation.isLoading {
+                if store.isRefreshing || presentations.contains(where: { $0.presentation.isLoading }) {
                     ProgressView()
                         .controlSize(.mini)
                         .colorScheme(.dark)
                 }
             }
 
-            providerSection(CostProvider.cursor.title) {
-                spendBarRow(
-                    title: "Current",
-                    value: presentation.currentText,
-                    tone: presentation.currentTone,
-                    progress: presentation.currentProgress
-                )
-                if let today = presentation.todayText {
-                    spendBarRow(
-                        title: "Today",
-                        value: today,
-                        tone: presentation.todayTone,
-                        progress: presentation.todayProgress
-                    )
-                }
-
-                if presentation.recent.isEmpty || presentation.isStale {
-                    Text(presentation.statusMessage)
-                        .font(.system(size: 11))
-                        .foregroundColor(.white.opacity(0.45))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .lineLimit(2)
-                        .help(presentation.statusMessage)
-                }
-                if !presentation.recent.isEmpty {
-                    ScrollView {
-                        VStack(spacing: 4) {
-                            ForEach(presentation.recent) { query in
-                                HStack {
-                                    Text(query.model)
-                                        .font(.system(size: 11, weight: .medium))
-                                        .foregroundColor(.white.opacity(0.55))
-                                        .lineLimit(1)
-                                    Spacer()
-                                    Text(query.text)
-                                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                                        .foregroundColor(toneColor(query.tone))
-                                        .monospacedDigit()
-                                        .lineLimit(1)
-                                }
-                            }
-                        }
-                    }
-                    .frame(maxHeight: 88)
-                }
+            ForEach(presentations, id: \.provider) { item in
+                providerCard(item.presentation)
             }
 
             Spacer(minLength: 0)
@@ -125,27 +84,35 @@ struct NotchContentView: View {
                 notchButton(title: "Refresh") {
                     Task { await store.refresh() }
                 }
-                notchButton(title: "Dashboard") {
-                    NSWorkspace.shared.open(CursorLinks.dashboard)
+                if store.isDualView {
+                    ForEach(presentations, id: \.provider) { item in
+                        notchButton(title: item.provider.title) {
+                            NSWorkspace.shared.open(store.dashboardURL(for: item.provider))
+                        }
+                    }
+                } else {
+                    notchButton(title: "Dashboard") {
+                        NSWorkspace.shared.open(store.dashboardURL)
+                    }
                 }
                 notchButton(title: "Settings") {
                     onOpenSettings()
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
-                    if let plan = presentation.plan {
+                    if !store.isDualView, let plan = primary.plan {
                         Text(plan)
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(.white.opacity(0.35))
                     }
-                    if let email = presentation.email {
+                    if !store.isDualView, let email = primary.email {
                         Text(email)
                             .font(.system(size: 10))
                             .foregroundColor(.white.opacity(0.28))
                             .lineLimit(1)
                     }
                     if let updated = store.lastUpdated {
-                        Text((presentation.isStale ? "Stale · " : "") + Formatting.shortTime(updated))
+                        Text((isAnyStale ? "Stale · " : "") + Formatting.shortTime(updated))
                             .font(.system(size: 10, design: .rounded))
                             .foregroundColor(.white.opacity(0.28))
                             .monospacedDigit()
@@ -155,6 +122,79 @@ struct NotchContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(.horizontal, 6)
+    }
+
+    private var isAnyStale: Bool {
+        presentations.contains { $0.presentation.isStale }
+    }
+
+    private var shadowTone: SpendTone {
+        if presentations.contains(where: { $0.presentation.currentTone == .red }) {
+            return .red
+        }
+        if presentations.contains(where: { $0.presentation.currentTone == .green }) {
+            return .green
+        }
+        return .default
+    }
+
+    private func compactChip(_ presentation: UsagePresentation?) -> some View {
+        Text(presentation?.currentCompact ?? "…")
+            .font(.system(size: 11, weight: .bold, design: .rounded))
+            .foregroundColor(toneColor(presentation?.currentTone ?? .default))
+            .monospacedDigit()
+            .lineLimit(1)
+            .minimumScaleFactor(0.65)
+            .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private func providerCard(_ presentation: UsagePresentation) -> some View {
+        providerSection(presentation.providerTitle) {
+            spendBarRow(
+                title: presentation.currentLabel,
+                value: presentation.currentText,
+                tone: presentation.currentTone,
+                progress: presentation.currentProgress
+            )
+            if let today = presentation.todayText {
+                spendBarRow(
+                    title: presentation.todayLabel,
+                    value: today,
+                    tone: presentation.todayTone,
+                    progress: presentation.todayProgress
+                )
+            }
+
+            if presentation.recent.isEmpty || presentation.isStale {
+                Text(presentation.statusMessage)
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.45))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .lineLimit(2)
+                    .help(presentation.statusMessage)
+            }
+            if !presentation.recent.isEmpty {
+                ScrollView {
+                    VStack(spacing: 4) {
+                        ForEach(presentation.recent) { query in
+                            HStack {
+                                Text(query.model)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.55))
+                                    .lineLimit(1)
+                                Spacer()
+                                Text(query.text)
+                                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                    .foregroundColor(toneColor(query.tone))
+                                    .monospacedDigit()
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: store.isDualView ? 56 : 88)
+            }
+        }
     }
 
     private func providerSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
