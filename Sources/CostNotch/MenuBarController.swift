@@ -18,12 +18,6 @@ final class MenuBarController: NSObject {
         super.init()
         style(currentItem.button)
         style(todayItem.button)
-        if let icon = Self.loadAppIcon() {
-            icon.size = NSSize(width: 16, height: 16)
-            icon.isTemplate = true
-            currentItem.button?.image = icon
-            currentItem.button?.imagePosition = .imageLeading
-        }
         rebuildMenu()
         store.$cursorSnapshot
             .combineLatest(store.$codexSnapshot, store.$isRefreshing)
@@ -42,31 +36,52 @@ final class MenuBarController: NSObject {
     }
 
     private func style(_ button: NSStatusBarButton?) {
-        button?.font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
+        button?.font = Self.menuBarFont
+    }
+
+    private func setTitle(_ title: String, on button: NSStatusBarButton?) {
+        guard let button else { return }
+        button.attributedTitle = NSAttributedString(string: title, attributes: [
+            .font: Self.menuBarFont,
+            .foregroundColor: NSColor.menuBarTitle,
+        ])
+        button.contentTintColor = nil
     }
 
     private func render() {
         let presentations = store.visiblePresentations
         let left = presentations.first?.presentation ?? store.presentation
-        currentItem.button?.title = " \(left.currentCompact)"
+        let dual = store.isDualView && presentations.count > 1
+        showAppIcon(true, on: currentItem.button)
+        setTitle(" \(left.currentCompact)", on: currentItem.button)
         currentItem.button?.toolTip = "\(left.providerTitle) · \(left.currentText)\n\(left.statusMessage)"
-        currentItem.button?.contentTintColor = NSColor.tone(left.currentTone)
 
-        if store.isDualView, let right = presentations.dropFirst().first?.presentation {
+        if dual, let right = presentations.dropFirst().first {
             todayItem.isVisible = true
-            todayItem.button?.title = " \(right.currentCompact)"
-            todayItem.button?.toolTip = "\(right.providerTitle) · \(right.currentText)\n\(right.statusMessage)"
-            todayItem.button?.contentTintColor = NSColor.tone(right.currentTone)
+            showAppIcon(true, on: todayItem.button)
+            setTitle(" \(right.presentation.currentCompact)", on: todayItem.button)
+            todayItem.button?.toolTip = "\(right.presentation.providerTitle) · \(right.presentation.currentText)\n\(right.presentation.statusMessage)"
         } else if let today = left.todayCompact ?? left.todayText {
             todayItem.isVisible = true
-            todayItem.button?.title = " \(today)"
+            showAppIcon(true, on: todayItem.button)
+            setTitle(" \(today)", on: todayItem.button)
             todayItem.button?.toolTip = (left.todayText.map { "\(left.todayLabel) · \($0)" } ?? left.todayLabel)
                 + "\n\(left.statusMessage)"
-            todayItem.button?.contentTintColor = NSColor.tone(left.todayTone)
         } else {
             todayItem.isVisible = false
         }
         rebuildMenu()
+    }
+
+    private func showAppIcon(_ show: Bool, on button: NSStatusBarButton?) {
+        guard let button else { return }
+        if show, let icon = Self.statusIcon?.copy() as? NSImage {
+            icon.isTemplate = true
+            button.image = icon
+            button.imagePosition = .imageLeading
+        } else {
+            button.image = nil
+        }
     }
 
     private func rebuildMenu() {
@@ -120,6 +135,83 @@ final class MenuBarController: NSObject {
         }
     }
 
+    private static let statusIcon: NSImage? = makeStatusIcon()
+
+    private static func makeStatusIcon() -> NSImage? {
+        guard let source = loadAppIcon(),
+              let tiff = source.tiffRepresentation,
+              let sourceRep = NSBitmapImageRep(data: tiff),
+              let sourceData = sourceRep.bitmapData else { return nil }
+        let sourceWidth = sourceRep.pixelsWide
+        let sourceHeight = sourceRep.pixelsHigh
+        let sourceBytes = max(sourceRep.bitsPerPixel / 8, 1)
+        let points: CGFloat = 18
+        let pixels = 72
+        let radius = Double(pixels) * 0.2237
+        let side = Double(pixels)
+        guard let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: pixels,
+            pixelsHigh: pixels,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: pixels * 4,
+            bitsPerPixel: 32
+        ), let destination = rep.bitmapData else { return nil }
+        rep.size = NSSize(width: points, height: points)
+        for y in 0..<pixels {
+            for x in 0..<pixels {
+                let sourceX = min(sourceWidth - 1, x * sourceWidth / pixels)
+                let sourceY = min(sourceHeight - 1, y * sourceHeight / pixels)
+                let sourceOffset = sourceY * sourceRep.bytesPerRow + sourceX * sourceBytes
+                let luminance = Self.luminance(sourceData, sourceOffset)
+                var mask = Self.iconCoverage(x: Double(x) + 0.5, y: Double(y) + 0.5, side: side, radius: radius)
+                if y < pixels * 16 / 100, luminance < 28 {
+                    mask = 0
+                }
+                if luminance > 100 {
+                    mask = 0
+                } else if luminance > 72 {
+                    mask *= Double(100 - luminance) / 28
+                }
+                let offset = y * rep.bytesPerRow + x * 4
+                destination[offset] = 0
+                destination[offset + 1] = 0
+                destination[offset + 2] = 0
+                destination[offset + 3] = UInt8(min(255, max(0, Int(mask * 255))))
+            }
+        }
+        let image = NSImage(size: NSSize(width: points, height: points))
+        image.addRepresentation(rep)
+        image.isTemplate = true
+        return image
+    }
+
+    private static func iconCoverage(x: Double, y: Double, side: Double, radius: Double) -> Double {
+        let centerX = min(max(x, radius), side - radius)
+        let centerY = min(max(y, radius), side - radius)
+        let dx = x - centerX
+        let dy = y - centerY
+        let distance = (dx * dx + dy * dy).squareRoot()
+        if distance <= radius - 0.6 {
+            return 1
+        }
+        if distance >= radius + 0.6 {
+            return 0
+        }
+        return (radius + 0.6 - distance) / 1.2
+    }
+
+    private static func luminance(_ data: UnsafeMutablePointer<UInt8>, _ offset: Int) -> Int {
+        let red = Int(data[offset])
+        let green = Int(data[offset + 1])
+        let blue = Int(data[offset + 2])
+        return (red * 30 + green * 59 + blue * 11) / 100
+    }
+
     private static func loadAppIcon() -> NSImage? {
         if let icon = NSImage(named: "AppIcon") {
             return icon
@@ -166,15 +258,15 @@ final class MenuBarController: NSObject {
     }
 }
 
+private extension MenuBarController {
+    static let menuBarFont = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
+}
+
 private extension NSColor {
-    static func tone(_ tone: SpendTone) -> NSColor {
-        switch tone {
-        case .red:
-            return NSColor(srgbRed: 0.945, green: 0.298, blue: 0.298, alpha: 1)
-        case .green:
-            return NSColor(srgbRed: 0.537, green: 0.820, blue: 0.522, alpha: 1)
-        case .default:
-            return .labelColor
+    static let menuBarTitle = NSColor(name: nil) { appearance in
+        if appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua {
+            return .white
         }
+        return .black
     }
 }
