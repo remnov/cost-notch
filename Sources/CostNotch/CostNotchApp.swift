@@ -30,6 +30,7 @@ extension Notification.Name {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let settings = AppSettings()
     let store: UsageStore
+    let updates: AppUpdateController
     private var notch: NotchWindowController?
     private var menuBar: MenuBarController?
     private var settingsWindow: SettingsWindowController?
@@ -38,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     override init() {
         store = UsageStore(settings: settings)
+        updates = AppUpdateController()
         super.init()
     }
 
@@ -47,7 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let window = self?.settingsWindow else { return }
             window.show()
         }
-        settingsWindow = SettingsWindowController(settings: settings, store: store)
+        settingsWindow = SettingsWindowController(settings: settings, store: store, updates: updates)
         settingsWindow?.onClose = { [weak self] in
             self?.notch?.applyVisibility()
         }
@@ -64,9 +66,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.settingsWindow?.isVisible == true
             }
         )
-        menuBar = MenuBarController(store: store, onOpenSettings: openSettings)
+        menuBar = MenuBarController(store: store, updates: updates, onOpenSettings: openSettings)
         notch = NotchWindowController(store: store, settings: settings, onOpenSettings: openSettings)
         store.start()
+        updates.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {

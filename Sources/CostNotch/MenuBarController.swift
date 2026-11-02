@@ -5,13 +5,15 @@ import CursorCostCore
 @MainActor
 final class MenuBarController: NSObject {
     private let store: UsageStore
+    private let updates: AppUpdateController
     private let onOpenSettings: () -> Void
     private let currentItem: NSStatusItem
     private let todayItem: NSStatusItem
     private var cancellables: Set<AnyCancellable> = []
 
-    init(store: UsageStore, onOpenSettings: @escaping () -> Void) {
+    init(store: UsageStore, updates: AppUpdateController, onOpenSettings: @escaping () -> Void) {
         self.store = store
+        self.updates = updates
         self.onOpenSettings = onOpenSettings
         self.todayItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         self.currentItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -30,6 +32,12 @@ final class MenuBarController: NSObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 DispatchQueue.main.async { self?.render() }
+            }
+            .store(in: &cancellables)
+        updates.$phase
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.render()
             }
             .store(in: &cancellables)
         render()
@@ -116,6 +124,19 @@ final class MenuBarController: NSObject {
             menu.addItem(action(store.dashboardMenuTitle, #selector(openDashboard)))
         }
         menu.addItem(.separator())
+        if let message = updates.statusMessage {
+            menu.addItem(header(message))
+        }
+        let checkTitle = updates.isChecking ? "Checking…" : "Check for Updates"
+        let check = action(checkTitle, #selector(checkForUpdates))
+        check.isEnabled = !updates.isChecking && !updates.isInstalling
+        menu.addItem(check)
+        if let version = updates.offeredVersion {
+            let title = updates.isInstalling ? "Updating…" : "Update to \(version)"
+            let item = action(title, #selector(installUpdate))
+            item.isEnabled = !updates.isInstalling
+            menu.addItem(item)
+        }
         menu.addItem(action("Quit Cost Notch", #selector(quit)))
         return menu
     }
@@ -251,6 +272,14 @@ final class MenuBarController: NSObject {
             return
         }
         NSWorkspace.shared.open(store.dashboardURL(for: provider))
+    }
+
+    @objc private func checkForUpdates() {
+        Task { await updates.checkForUpdates() }
+    }
+
+    @objc private func installUpdate() {
+        Task { await updates.install() }
     }
 
     @objc private func quit() {

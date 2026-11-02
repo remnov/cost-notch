@@ -4,6 +4,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var store: UsageStore
+    @ObservedObject var updates: AppUpdateController
 
     var body: some View {
         Form {
@@ -78,10 +79,28 @@ struct SettingsView: View {
             }
 
             Section {
-                Text("Cost Notch \(Self.version)")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                VStack(spacing: 8) {
+                    Text("Cost Notch \(Self.version)")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                    Button(updates.isChecking ? "Checking…" : "Check for Updates") {
+                        Task { await updates.checkForUpdates() }
+                    }
+                    .disabled(updates.isChecking || updates.isInstalling)
+                    if let version = updates.offeredVersion {
+                        Button(updates.isInstalling ? "Updating…" : "Update to \(version)") {
+                            Task { await updates.install() }
+                        }
+                        .disabled(updates.isInstalling)
+                    }
+                    if let message = updates.statusMessage {
+                        Text(message)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
         }
         .formStyle(.grouped)
