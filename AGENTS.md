@@ -2,7 +2,7 @@
 
 macOS 13+ menu-bar + notch overlay for AI spend. Bundle `local.cost-notch`, display name **Cost Notch**, executable `CostNotch`. Cursor and Codex share one overlay; Claude is a future section, not a separate app.
 
-Version lives in `Sources/CostNotch/Info.plist` (`CFBundleShortVersionString` + `CFBundleVersion`). Bump both when shipping. `package.sh` reads the short version for DMG/PKG names.
+Version lives in `Sources/CostNotch/Info.plist` (`CFBundleShortVersionString` + `CFBundleVersion`). Bump both when shipping. `package.sh` reads the short version for DMG/PKG names and both numbers for the update zip.
 
 ## Layout
 
@@ -10,7 +10,7 @@ Version lives in `Sources/CostNotch/Info.plist` (`CFBundleShortVersionString` + 
 - `Sources/CostNotch` — AppKit/SwiftUI overlay, menu bar, settings, alerts. No test target.
 - `Tests/CursorCostCoreTests` — Swift Testing, given/when/then names.
 - `build-app.sh` — release `.app` (ad-hoc signed). Writes `dist/` unless that bundle is not writable, then `artifacts/`.
-- `package.sh` — DMG + PKG from whichever `.app` the build just produced.
+- `package.sh` — DMG, PKG, and update zip from whichever `.app` the build just produced.
 
 Do not copy `state.vscdb` (multi-GB, WAL). Do not write tokens back into Cursor’s DB.
 
@@ -62,6 +62,10 @@ Settings `costProvider` chooses Cursor or Codex for the overlay/menu. `dualView`
 - Menu extras: compact chips (`currentCompact`, `todayCompact`) in the system menu-bar color, with the white framed app icon and no provider name. Spend color stays on the notch pill. Full strings in the dropdown. Subscribe to `$cursorSnapshot` / `$codexSnapshot`, not only `objectWillChange`.
 - Settings via overlay, menu, or ⌘,. `LSUIElement` — no Dock icon except while Settings/alert is frontmost. Closing Settings must restore `.accessory` unless an alert still needs `.regular`.
 
+## Updates
+
+Latest GitHub release asset `Cost-Notch-{version}-{build}.zip` (`CFBundleShortVersionString` and `CFBundleVersion`) contains `Cost Notch.app`. The app reads `https://api.github.com/repos/remnov/cost-notch/releases/latest` on launch and every 6 hours. **Check for Updates** in the menu and Settings runs that check and reports up to date, a newer build, or a failure. A higher build offers **Update to {version}** in the menu and Settings. One click downloads that zip, checks bundle id `local.cost-notch`, the plist version and build, and the Developer ID team, then quits, replaces `/Applications` or `~/Applications`, and relaunches. A root-owned copy asks for the administrator password. Any other location opens the release page. DMG and PKG stay the first install.
+
 ## Conventions
 
 Swift, no comments, no inline imports, exhaustive switches with `never`. Reuse existing helpers. Tests: given/when/then names, no duplicate cases, no extra abstractions. Do not add dependencies.
@@ -70,7 +74,7 @@ Swift, no comments, no inline imports, exhaustive switches with `never`. Reuse e
 swift test
 ./build-app.sh
 open "artifacts/Cost Notch.app"   # or dist/
-./package.sh                     # Cost-Notch-{version}.dmg + .pkg
+./package.sh                     # Cost-Notch-{version}.dmg + .pkg + Cost-Notch-{version}-{build}.zip
 ```
 
 Signed GitHub releases (Developer ID + notary + `gh release`): **[RELEASE.md](RELEASE.md)**.

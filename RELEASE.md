@@ -116,6 +116,11 @@ OUT="dist"
 
 codesign --force --deep --options runtime --timestamp --sign "$APP_SIGN" "$APP"
 
+BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Sources/CostNotch/Info.plist)"
+ZIP="${OUT}/Cost-Notch-${VERSION}-${BUILD}.zip"
+rm -f "$ZIP"
+ditto -c -k --keepParent "$APP" "$ZIP"
+
 # DMG: restage signed app
 STAGE="${OUT}/package-root"
 rm -rf "$STAGE"
@@ -139,6 +144,9 @@ mv "$SIGNED" "$UNSIGNED"
 ### Submit to Apple
 
 ```bash
+BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Sources/CostNotch/Info.plist)"
+ZIP="${OUT}/Cost-Notch-${VERSION}-${BUILD}.zip"
+
 xcrun notarytool submit "${OUT}/Cost-Notch-${VERSION}.dmg" \
   --keychain-profile "notary" --wait
 
@@ -148,6 +156,18 @@ xcrun notarytool submit "${OUT}/Cost-Notch-${VERSION}.pkg" \
   --keychain-profile "notary" --wait
 
 xcrun stapler staple "${OUT}/Cost-Notch-${VERSION}.pkg"
+
+xcrun notarytool submit "$ZIP" \
+  --keychain-profile "notary" --wait
+
+STAGE="${OUT}/package-root"
+rm -rf "$STAGE"
+mkdir -p "$STAGE"
+ditto -x -k "$ZIP" "$STAGE"
+xcrun stapler staple "$STAGE/Cost Notch.app"
+rm -f "$ZIP"
+ditto -c -k --keepParent "$STAGE/Cost Notch.app" "$ZIP"
+rm -rf "$STAGE"
 ```
 
 `status: Accepted` then staple. If **Invalid**, log:
@@ -166,10 +186,13 @@ spctl --assess --type open --context context:primary-signature -v "${OUT}/Cost-N
 
 ## 3. GitHub release
 
+The app’s one-click update downloads `Cost-Notch-{version}-{build}.zip` from the latest release. `{version}` is `CFBundleShortVersionString` and `{build}` is `CFBundleVersion`. The archive must contain `Cost Notch.app` at the top level. DMG and PKG stay the first-install downloads.
+
 Logged in as `gh` (`gh auth status`).
 
 ```bash
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Sources/CostNotch/Info.plist)"
+BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Sources/CostNotch/Info.plist)"
 OUT="dist"
 [[ -f "dist/Cost-Notch-${VERSION}.dmg" ]] || OUT="artifacts"
 
@@ -179,11 +202,13 @@ git push origin "v${VERSION}"
 gh release create "v${VERSION}" \
   "${OUT}/Cost-Notch-${VERSION}.dmg" \
   "${OUT}/Cost-Notch-${VERSION}.pkg" \
+  "${OUT}/Cost-Notch-${VERSION}-${BUILD}.zip" \
   --title "Cost Notch ${VERSION}" \
   --notes "Signed and notarized macOS build.
 
 - **DMG** — open, drag Cost Notch to Applications
 - **PKG** — install to /Applications
+- **ZIP** — one-click update for copies already in Applications
 "
 ```
 
@@ -206,6 +231,7 @@ Do not commit `dist/` or `artifacts/` (gitignored). Only attach them on the GitH
 - [ ] DMG signed; PKG signed with **Developer ID Installer**
 - [ ] Both notarized (`Accepted`) and stapled
 - [ ] `vX.Y.Z` tag pushed
-- [ ] GitHub release has `.dmg` and `.pkg`
+- [ ] Update zip is `Cost-Notch-{version}-{build}.zip`, notarized, with the app inside stapled
+- [ ] GitHub release has `.dmg`, `.pkg`, and `.zip`
 
 Other Macs: Gatekeeper should allow a notarized Developer ID build without “Open Anyway”.

@@ -25,16 +25,18 @@ if [[ -e dist && ! -w dist ]]; then
 fi
 mkdir -p "$OUT"
 
+BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Sources/CostNotch/Info.plist)"
 STAGE="${OUT}/package-root"
 DMG="${OUT}/Cost-Notch-${VERSION}.dmg"
 PKG="${OUT}/Cost-Notch-${VERSION}.pkg"
+ZIP="${OUT}/Cost-Notch-${VERSION}-${BUILD}.zip"
 
 rm -rf "$STAGE"
 mkdir -p "$STAGE"
 cp -R "$APP_SRC" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
 
-rm -f "$DMG" "$PKG"
+rm -f "$DMG" "$PKG" "$ZIP"
 hdiutil create \
   -volname "$APP_NAME" \
   -srcfolder "$STAGE" \
@@ -49,12 +51,15 @@ pkgbuild \
   --component "$APP_SRC" \
   "$PKG" >/dev/null
 
+ditto -c -k --keepParent "$APP_SRC" "$ZIP"
+
 rm -rf "$STAGE"
 
 echo
 echo "App:                  $APP_SRC"
 echo "Installer disk image: $DMG"
 echo "Installer package:    $PKG"
+echo "Update archive:       $ZIP"
 echo
 echo "Open the DMG and drag Cost Notch into Applications."
 echo "Or install the PKG: open \"$PKG\""

@@ -20,7 +20,10 @@ let package = Package(
         .executableTarget(
             name: "CostNotch",
             dependencies: ["CursorCostCore"],
-            exclude: ["Info.plist"]
+            exclude: ["Info.plist"],
+            linkerSettings: [
+                .linkedFramework("Security"),
+            ]
         ),
         .testTarget(
             name: "CursorCostCoreTests",
