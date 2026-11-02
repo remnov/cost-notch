@@ -82,7 +82,7 @@ final class NotchWindowController: NSObject {
     private func installContent(geometry: NotchGeometry) {
         let tracking = NotchTrackingView(frame: NSRect(origin: .zero, size: geometry.collapsedFrame().size))
         tracking.autoresizingMask = [.width, .height]
-        tracking.onMouseEntered = { [weak self] in self?.expand() }
+        tracking.onMouseEntered = { [weak self] in self?.handleMouseMove() }
         tracking.onMouseExited = { [weak self] in self?.scheduleCollapse() }
 
         let root = NotchContentView(
@@ -139,10 +139,12 @@ final class NotchWindowController: NSObject {
             return
         }
         let geometry = NotchGeometry.detect(screen: screen)
-        let overHotspot = geometry.containsActivation(point)
-        let overPanel = panel.frame.insetBy(dx: -18, dy: -18).contains(point)
-        if overHotspot || overPanel {
+        if geometry.containsActivation(point) {
             expand()
+            return
+        }
+        if isExpanded, panel.frame.insetBy(dx: -18, dy: -18).contains(point) {
+            collapseWork?.cancel()
             return
         }
         scheduleCollapse()

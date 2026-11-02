@@ -63,7 +63,7 @@ struct NotchGeometry: Equatable {
     }
 
     func containsActivation(_ point: NSPoint) -> Bool {
-        OverlayHotspot.contains(point, screenFrame: screenFrame, collapsedFrame: collapsedFrame())
+        OverlayHotspot.contains(point, screenFrame: screenFrame)
     }
 
     func collapsedFrame() -> NSRect {
