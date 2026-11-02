@@ -120,7 +120,7 @@ struct SettingsView: View {
     }
 
     private static var version: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.2.0"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.2.1"
     }
 
     private func bind<Value>(_ keyPath: WritableKeyPath<NotchPreferences, Value>) -> Binding<Value> {
