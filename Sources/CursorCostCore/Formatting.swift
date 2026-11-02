@@ -60,12 +60,6 @@ public enum Formatting {
         return "\(oneDecimal(amount / 1_000_000))M"
     }
 
-    public static func shortTime(_ date: Date) -> String {
-        let calendar = Calendar.current
-        let parts = calendar.dateComponents([.hour, .minute], from: date)
-        return String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
-    }
-
     public static func dateTime(_ milliseconds: Double) -> String {
         let date = Date(timeIntervalSince1970: milliseconds / 1000)
         guard milliseconds.isFinite else { return "—" }
