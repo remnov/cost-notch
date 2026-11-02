@@ -59,7 +59,7 @@ Settings `costProvider` chooses Cursor or Codex for the overlay/menu. `dualView`
 - Expand: pointer on the top ~10px of that Mac screen, across the full width, including over the pill. Hovering other displays does not show or move the overlay.
 - Expanded: provider card(s) with Current/Today bars, or 5-hour/Weekly for Codex (fill clamped to 100%), recents (Cursor), Refresh / Dashboard / Settings. Dual view shows both cards. `NotchPanel.canBecomeKey` must stay `true` or tray buttons fail.
 - Pass hits through expanded shadow gutters (`NotchTrackingView.interactiveInset`).
-- Menu extras: compact chips (`currentCompact`, `todayCompact`); dual view uses each provider’s Current. Full strings in the dropdown. Subscribe to `$cursorSnapshot` / `$codexSnapshot`, not only `objectWillChange`.
+- Menu extras: compact chips (`currentCompact`, `todayCompact`) in the system menu-bar color, with the white framed app icon and no provider name. Spend color stays on the notch pill. Full strings in the dropdown. Subscribe to `$cursorSnapshot` / `$codexSnapshot`, not only `objectWillChange`.
 - Settings via overlay, menu, or ⌘,. `LSUIElement` — no Dock icon except while Settings/alert is frontmost. Closing Settings must restore `.accessory` unless an alert still needs `.regular`.
 
 ## Conventions
