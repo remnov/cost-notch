@@ -111,12 +111,9 @@ struct NotchContentView: View {
                             .foregroundColor(.white.opacity(0.28))
                             .lineLimit(1)
                     }
-                    if let updated = store.lastUpdated {
-                        Text((isAnyStale ? "Stale · " : "") + Formatting.shortTime(updated))
-                            .font(.system(size: 10, design: .rounded))
-                            .foregroundColor(.white.opacity(0.28))
-                            .monospacedDigit()
-                    }
+                    Text("v\(Self.appVersion)")
+                        .font(.system(size: 10, design: .rounded))
+                        .foregroundColor(.white.opacity(0.28))
                 }
             }
         }
@@ -124,8 +121,8 @@ struct NotchContentView: View {
         .padding(.horizontal, 6)
     }
 
-    private var isAnyStale: Bool {
-        presentations.contains { $0.presentation.isStale }
+    private static var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.2.1"
     }
 
     private var shadowTone: SpendTone {
