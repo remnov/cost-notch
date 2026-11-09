@@ -13,6 +13,7 @@ final class NotchWindowController: NSObject {
     private var trackingView: NotchTrackingView?
     private var cancellables: Set<AnyCancellable> = []
     private var collapseWork: DispatchWorkItem?
+    private var expandWork: DispatchWorkItem?
     private var isExpanded = false
     private var globalMouseMonitor: Any?
     private var localMouseMonitor: Any?
@@ -60,6 +61,7 @@ final class NotchWindowController: NSObject {
     }
 
     func destroy() {
+        cancelExpand()
         collapseWork?.cancel()
         stopMouseMonitor()
         panel.orderOut(nil)
@@ -75,6 +77,8 @@ final class NotchWindowController: NSObject {
         if show {
             panel.orderFrontRegardless()
         } else {
+            cancelExpand()
+            collapseWork?.cancel()
             panel.orderOut(nil)
         }
     }
@@ -140,14 +144,46 @@ final class NotchWindowController: NSObject {
         }
         let geometry = NotchGeometry.detect(screen: screen)
         if geometry.containsActivation(point) {
-            expand()
+            scheduleExpand()
             return
         }
         if isExpanded, panel.frame.insetBy(dx: -18, dy: -18).contains(point) {
+            cancelExpand()
             collapseWork?.cancel()
             return
         }
         scheduleCollapse()
+    }
+
+    private func scheduleExpand() {
+        collapseWork?.cancel()
+        if isExpanded || settings.preferences.expandDelaySeconds <= 0 {
+            cancelExpand()
+            expand()
+            return
+        }
+        guard expandWork == nil else { return }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.expandWork = nil
+            guard self.settings.preferences.showNotch else { return }
+            let point = NSEvent.mouseLocation
+            guard let screen = NotchGeometry.preferredScreen(),
+                  NotchGeometry.detect(screen: screen).containsActivation(point) else {
+                return
+            }
+            self.expand()
+        }
+        expandWork = work
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + settings.preferences.expandDelaySeconds,
+            execute: work
+        )
+    }
+
+    private func cancelExpand() {
+        expandWork?.cancel()
+        expandWork = nil
     }
 
     private func expand() {
@@ -176,6 +212,7 @@ final class NotchWindowController: NSObject {
     }
 
     private func scheduleCollapse() {
+        cancelExpand()
         guard isExpanded else { return }
         collapseWork?.cancel()
         let work = DispatchWorkItem { [weak self] in
@@ -191,7 +228,10 @@ final class NotchWindowController: NSObject {
             self.collapse()
         }
         collapseWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55, execute: work)
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + settings.preferences.hideDelaySeconds,
+            execute: work
+        )
     }
 
     private func collapse() {
