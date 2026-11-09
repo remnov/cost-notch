@@ -107,8 +107,8 @@ public struct NotchPreferences: Equatable, Codable, Sendable {
         spikeTokenThreshold = max(1_000, spikeTokenThreshold)
         criticalTokenThreshold = max(1_000, criticalTokenThreshold)
         criticalCostUsdThreshold = max(0.01, criticalCostUsdThreshold)
-        expandDelaySeconds = min(10, max(0, expandDelaySeconds))
-        hideDelaySeconds = min(10, max(0, hideDelaySeconds))
+        expandDelaySeconds = min(2, max(0, expandDelaySeconds))
+        hideDelaySeconds = min(2, max(0, hideDelaySeconds))
     }
 
     enum CodingKeys: String, CodingKey {

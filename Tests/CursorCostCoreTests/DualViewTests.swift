@@ -45,7 +45,7 @@ struct DualViewTests {
     }
 
     @Test
-    func clamp_givenHoverDelaysOutsideRange_thenKeepsThemWithinTenSeconds() {
+    func clamp_givenHoverDelaysOutsideRange_thenKeepsThemWithinTwoSeconds() {
         var given = NotchPreferences.standard
         given.expandDelaySeconds = -2
         given.hideDelaySeconds = 40
@@ -53,7 +53,12 @@ struct DualViewTests {
         given.clamp()
 
         #expect(given.expandDelaySeconds == 0)
-        #expect(given.hideDelaySeconds == 10)
+        #expect(given.hideDelaySeconds == 2)
+
+        given.expandDelaySeconds = 5
+        given.clamp()
+
+        #expect(given.expandDelaySeconds == 2)
     }
 
     @Test

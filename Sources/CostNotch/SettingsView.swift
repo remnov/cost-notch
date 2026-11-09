@@ -30,10 +30,10 @@ struct SettingsView: View {
                     .disabled(settings.preferences.minimalMode)
                 Toggle(minimalModeTitle, isOn: bind(\.minimalMode))
                 Toggle("Show notch overlay", isOn: bind(\.showNotch))
-                Stepper(value: bind(\.expandDelaySeconds), in: 0...10, step: 0.1) {
+                Stepper(value: bind(\.expandDelaySeconds), in: 0...2, step: 0.1) {
                     Text("Expand after \(Self.durationLabel(settings.preferences.expandDelaySeconds))")
                 }
-                Stepper(value: bind(\.hideDelaySeconds), in: 0...10, step: 0.1) {
+                Stepper(value: bind(\.hideDelaySeconds), in: 0...2, step: 0.1) {
                     Text("Hide after leaving \(Self.durationLabel(settings.preferences.hideDelaySeconds))")
                 }
                 if showsCursor {
