@@ -30,6 +30,12 @@ struct SettingsView: View {
                     .disabled(settings.preferences.minimalMode)
                 Toggle(minimalModeTitle, isOn: bind(\.minimalMode))
                 Toggle("Show notch overlay", isOn: bind(\.showNotch))
+                Stepper(value: bind(\.expandDelaySeconds), in: 0...2, step: 0.1) {
+                    Text("Expand after \(Self.durationLabel(settings.preferences.expandDelaySeconds))")
+                }
+                Stepper(value: bind(\.hideDelaySeconds), in: 0...2, step: 0.1) {
+                    Text("Hide after leaving \(Self.durationLabel(settings.preferences.hideDelaySeconds))")
+                }
                 if showsCursor {
                     Stepper(value: bind(\.recentQueryCount), in: 1...10) {
                         Text("Recent queries: \(settings.preferences.recentQueryCount)")
@@ -104,7 +110,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(minWidth: 420, minHeight: 560)
+        .frame(minWidth: 420, minHeight: 640)
         .onChange(of: settings.preferences.budgetDayBasis) { _ in
             Task { await store.refresh(allowKeychainInteraction: false) }
         }
@@ -138,8 +144,19 @@ struct SettingsView: View {
         return "Minimal mode (\(settings.preferences.costProvider.currentLabel) only)"
     }
 
+    private static func durationLabel(_ seconds: Double) -> String {
+        let hundredths = Int((seconds * 100).rounded())
+        if hundredths % 100 == 0 {
+            return "\(hundredths / 100) s"
+        }
+        if hundredths % 10 == 0 {
+            return "\(hundredths / 100).\(hundredths / 10 % 10) s"
+        }
+        return "\(hundredths / 100).\(hundredths / 10 % 10)\(hundredths % 10) s"
+    }
+
     private static var version: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.2.3"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.2.4"
     }
 
     private func bind<Value>(_ keyPath: WritableKeyPath<NotchPreferences, Value>) -> Binding<Value> {

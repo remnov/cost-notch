@@ -37,13 +37,13 @@ appleid.apple.com → Sign-In and Security → App-Specific Passwords → genera
 Store it once:
 
 ```bash
-xcrun notarytool store-credentials "notary" \
+xcrun notarytool store-credentials "notarytool" \
   --apple-id "you@example.com" \
   --team-id "TEAMID" \
   --password "xxxx-xxxx-xxxx-xxxx"
 ```
 
-Later commands use `--keychain-profile "notary"` (no password in the shell).
+Later commands use `--keychain-profile "notarytool"` (no password in the shell).
 
 ### Optional: stable bundle id
 
@@ -148,17 +148,17 @@ BUILD="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Sources/CostNotch/I
 ZIP="${OUT}/Cost-Notch-${VERSION}-${BUILD}.zip"
 
 xcrun notarytool submit "${OUT}/Cost-Notch-${VERSION}.dmg" \
-  --keychain-profile "notary" --wait
+  --keychain-profile "notarytool" --wait
 
 xcrun stapler staple "${OUT}/Cost-Notch-${VERSION}.dmg"
 
 xcrun notarytool submit "${OUT}/Cost-Notch-${VERSION}.pkg" \
-  --keychain-profile "notary" --wait
+  --keychain-profile "notarytool" --wait
 
 xcrun stapler staple "${OUT}/Cost-Notch-${VERSION}.pkg"
 
 xcrun notarytool submit "$ZIP" \
-  --keychain-profile "notary" --wait
+  --keychain-profile "notarytool" --wait
 
 STAGE="${OUT}/package-root"
 rm -rf "$STAGE"
@@ -173,7 +173,7 @@ rm -rf "$STAGE"
 `status: Accepted` then staple. If **Invalid**, log:
 
 ```bash
-xcrun notarytool log <submission-id> --keychain-profile "notary"
+xcrun notarytool log <submission-id> --keychain-profile "notarytool"
 ```
 
 Usual causes: missing `--options runtime`, no `--timestamp`, or unsigned nested binaries.

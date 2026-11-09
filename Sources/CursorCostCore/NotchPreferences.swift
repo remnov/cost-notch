@@ -17,6 +17,8 @@ public struct NotchPreferences: Equatable, Codable, Sendable {
     public var costProvider: CostProvider
     public var dualView: Bool
     public var pillLeftProvider: CostProvider
+    public var expandDelaySeconds: Double
+    public var hideDelaySeconds: Double
 
     public init(
         pollIntervalMinutes: Int = 1,
@@ -32,7 +34,9 @@ public struct NotchPreferences: Equatable, Codable, Sendable {
         showNotch: Bool = true,
         costProvider: CostProvider = .cursor,
         dualView: Bool = false,
-        pillLeftProvider: CostProvider = .cursor
+        pillLeftProvider: CostProvider = .cursor,
+        expandDelaySeconds: Double = 0,
+        hideDelaySeconds: Double = 0.55
     ) {
         self.pollIntervalMinutes = pollIntervalMinutes
         self.showToday = showToday
@@ -48,6 +52,8 @@ public struct NotchPreferences: Equatable, Codable, Sendable {
         self.costProvider = costProvider
         self.dualView = dualView
         self.pillLeftProvider = pillLeftProvider
+        self.expandDelaySeconds = expandDelaySeconds
+        self.hideDelaySeconds = hideDelaySeconds
         clamp()
     }
 
@@ -67,7 +73,9 @@ public struct NotchPreferences: Equatable, Codable, Sendable {
             showNotch: try container.decodeIfPresent(Bool.self, forKey: .showNotch) ?? true,
             costProvider: try container.decodeIfPresent(CostProvider.self, forKey: .costProvider) ?? .cursor,
             dualView: try container.decodeIfPresent(Bool.self, forKey: .dualView) ?? false,
-            pillLeftProvider: try container.decodeIfPresent(CostProvider.self, forKey: .pillLeftProvider) ?? .cursor
+            pillLeftProvider: try container.decodeIfPresent(CostProvider.self, forKey: .pillLeftProvider) ?? .cursor,
+            expandDelaySeconds: try container.decodeIfPresent(Double.self, forKey: .expandDelaySeconds) ?? 0,
+            hideDelaySeconds: try container.decodeIfPresent(Double.self, forKey: .hideDelaySeconds) ?? 0.55
         )
     }
 
@@ -99,6 +107,8 @@ public struct NotchPreferences: Equatable, Codable, Sendable {
         spikeTokenThreshold = max(1_000, spikeTokenThreshold)
         criticalTokenThreshold = max(1_000, criticalTokenThreshold)
         criticalCostUsdThreshold = max(0.01, criticalCostUsdThreshold)
+        expandDelaySeconds = min(2, max(0, expandDelaySeconds))
+        hideDelaySeconds = min(2, max(0, hideDelaySeconds))
     }
 
     enum CodingKeys: String, CodingKey {
@@ -116,5 +126,7 @@ public struct NotchPreferences: Equatable, Codable, Sendable {
         case costProvider
         case dualView
         case pillLeftProvider
+        case expandDelaySeconds
+        case hideDelaySeconds
     }
 }

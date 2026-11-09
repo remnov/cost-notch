@@ -56,7 +56,7 @@ Settings `costProvider` chooses Cursor or Codex for the overlay/menu. `dualView`
 ## Overlay UX
 
 - Collapsed pill: compact Current on the left of the camera gap on the built-in Mac screen (`CGDisplayIsBuiltin`, then notched, then main). Dual view also fills the right wing. The overlay never relocates to other monitors.
-- Expand: pointer on the top ~10px of that Mac screen, across the full width, including over the pill. Hovering other displays does not show or move the overlay.
+- Expand: pointer on the top ~10px of that Mac screen, across the full width, including over the pill. Hovering other displays does not show or move the overlay. `expandDelaySeconds` waits before expanding (default 0). `hideDelaySeconds` waits before collapsing after the pointer leaves the pill (default 0.55). Both are 0...2 seconds in Settings.
 - Expanded: provider card(s) with Current/Today bars, or 5-hour/Weekly for Codex (fill clamped to 100%), recents (Cursor), Refresh / Dashboard / Settings. Dual view shows both cards. `NotchPanel.canBecomeKey` must stay `true` or tray buttons fail.
 - Pass hits through expanded shadow gutters (`NotchTrackingView.interactiveInset`).
 - Menu extras: compact chips (`currentCompact`, `todayCompact`) in the system menu-bar color, with the white framed app icon and no provider name. Spend color stays on the notch pill. Full strings in the dropdown. Subscribe to `$cursorSnapshot` / `$codexSnapshot`, not only `objectWillChange`.

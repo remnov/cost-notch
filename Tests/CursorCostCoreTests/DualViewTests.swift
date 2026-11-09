@@ -40,6 +40,25 @@ struct DualViewTests {
         #expect(!then.dualView)
         #expect(then.pillLeftProvider == .cursor)
         #expect(then.pillRightProvider == .codex)
+        #expect(then.expandDelaySeconds == 0)
+        #expect(then.hideDelaySeconds == 0.55)
+    }
+
+    @Test
+    func clamp_givenHoverDelaysOutsideRange_thenKeepsThemWithinTwoSeconds() {
+        var given = NotchPreferences.standard
+        given.expandDelaySeconds = -2
+        given.hideDelaySeconds = 40
+
+        given.clamp()
+
+        #expect(given.expandDelaySeconds == 0)
+        #expect(given.hideDelaySeconds == 2)
+
+        given.expandDelaySeconds = 5
+        given.clamp()
+
+        #expect(given.expandDelaySeconds == 2)
     }
 
     @Test
