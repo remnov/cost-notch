@@ -14,8 +14,10 @@ public enum OverlayHotspot {
     }
 
     public static func contains(_ point: CGPoint, screenFrame: CGRect) -> Bool {
-        guard screenFrame.contains(point) else { return false }
-        return topEdgeFrame(screenFrame: screenFrame).contains(point)
+        let edge = topEdgeFrame(screenFrame: screenFrame)
+        let xInside = point.x >= edge.minX && point.x < edge.maxX
+        let yInside = point.y >= edge.minY && point.y <= edge.maxY
+        return xInside && yInside
     }
 
     public static func pickOverlayScreen(

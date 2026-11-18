@@ -17,6 +17,7 @@ final class NotchWindowController: NSObject {
     private var isExpanded = false
     private var globalMouseMonitor: Any?
     private var localMouseMonitor: Any?
+    private var hoverPoll: Timer?
 
     init(store: UsageStore, settings: AppSettings, onOpenSettings: @escaping () -> Void) {
         self.store = store
@@ -62,7 +63,7 @@ final class NotchWindowController: NSObject {
 
     func destroy() {
         cancelExpand()
-        collapseWork?.cancel()
+        cancelCollapse()
         stopMouseMonitor()
         panel.orderOut(nil)
         panel.contentView = nil
@@ -78,7 +79,7 @@ final class NotchWindowController: NSObject {
             panel.orderFrontRegardless()
         } else {
             cancelExpand()
-            collapseWork?.cancel()
+            cancelCollapse()
             panel.orderOut(nil)
         }
     }
@@ -122,9 +123,18 @@ final class NotchWindowController: NSObject {
             handler()
             return event
         }
+        let timer = Timer(timeInterval: 0.05, repeats: true) { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.sampleHover()
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        hoverPoll = timer
     }
 
     private func stopMouseMonitor() {
+        hoverPoll?.invalidate()
+        hoverPoll = nil
         if let globalMouseMonitor {
             NSEvent.removeMonitor(globalMouseMonitor)
             self.globalMouseMonitor = nil
@@ -133,6 +143,24 @@ final class NotchWindowController: NSObject {
             NSEvent.removeMonitor(localMouseMonitor)
             self.localMouseMonitor = nil
         }
+    }
+
+    private func sampleHover() {
+        guard settings.preferences.showNotch else { return }
+        let point = NSEvent.mouseLocation
+        guard let screen = NotchGeometry.preferredScreen() else { return }
+        let geometry = NotchGeometry.detect(screen: screen)
+        if geometry.containsActivation(point) {
+            scheduleExpand()
+            return
+        }
+        guard isExpanded else { return }
+        if panel.frame.insetBy(dx: -18, dy: -18).contains(point) {
+            cancelCollapse()
+            return
+        }
+        guard collapseWork == nil else { return }
+        scheduleCollapse()
     }
 
     private func handleMouseMove() {
@@ -149,14 +177,14 @@ final class NotchWindowController: NSObject {
         }
         if isExpanded, panel.frame.insetBy(dx: -18, dy: -18).contains(point) {
             cancelExpand()
-            collapseWork?.cancel()
+            cancelCollapse()
             return
         }
         scheduleCollapse()
     }
 
     private func scheduleExpand() {
-        collapseWork?.cancel()
+        cancelCollapse()
         if isExpanded || settings.preferences.expandDelaySeconds <= 0 {
             cancelExpand()
             expand()
@@ -186,8 +214,13 @@ final class NotchWindowController: NSObject {
         expandWork = nil
     }
 
-    private func expand() {
+    private func cancelCollapse() {
         collapseWork?.cancel()
+        collapseWork = nil
+    }
+
+    private func expand() {
+        cancelCollapse()
         guard let screen = NotchGeometry.preferredScreen() else { return }
         let geometry = NotchGeometry.detect(screen: screen)
         let screenChanged = geometry.screenFrame != viewModel.geometry.screenFrame
@@ -212,11 +245,18 @@ final class NotchWindowController: NSObject {
     }
 
     private func scheduleCollapse() {
+        let point = NSEvent.mouseLocation
+        if let screen = NotchGeometry.preferredScreen(),
+           NotchGeometry.detect(screen: screen).containsActivation(point) {
+            cancelCollapse()
+            return
+        }
         cancelExpand()
         guard isExpanded else { return }
-        collapseWork?.cancel()
+        cancelCollapse()
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
+            self.collapseWork = nil
             let point = NSEvent.mouseLocation
             if self.panel.frame.insetBy(dx: -18, dy: -18).contains(point) {
                 return
