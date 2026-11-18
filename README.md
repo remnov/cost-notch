@@ -62,7 +62,7 @@ Installers:
 ./package.sh
 ```
 
-Writes `dist/Cost-Notch-1.2.4.dmg`, `dist/Cost-Notch-1.2.4.pkg`, and `dist/Cost-Notch-1.2.4-8.zip` (or `artifacts/` if `dist/` is not writable).
+Writes `dist/Cost-Notch-1.2.5.dmg`, `dist/Cost-Notch-1.2.5.pkg`, and `dist/Cost-Notch-1.2.5-9.zip` (or `artifacts/` if `dist/` is not writable).
 
 Architecture and overlay rules: [`AGENTS.md`](AGENTS.md).
 
