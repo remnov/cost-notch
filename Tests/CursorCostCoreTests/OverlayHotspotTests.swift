@@ -45,6 +45,26 @@ struct OverlayHotspotTests {
     }
 
     @Test
+    func contains_givenPointPinnedToTopEdge_thenActivates() {
+        let givenScreen = CGRect(x: 0, y: 0, width: 1512, height: 982)
+        let givenPoint = CGPoint(x: 200, y: givenScreen.maxY)
+
+        let then = OverlayHotspot.contains(givenPoint, screenFrame: givenScreen)
+
+        #expect(then)
+    }
+
+    @Test
+    func contains_givenPointJustAboveTopEdge_thenDoesNotActivate() {
+        let givenScreen = CGRect(x: 0, y: 0, width: 1512, height: 982)
+        let givenPoint = CGPoint(x: 200, y: givenScreen.maxY + 1)
+
+        let then = OverlayHotspot.contains(givenPoint, screenFrame: givenScreen)
+
+        #expect(!then)
+    }
+
+    @Test
     func contains_givenPointOnExternalMonitor_thenDoesNotActivate() {
         let givenMacScreen = CGRect(x: 0, y: 0, width: 1512, height: 982)
         let givenPoint = CGPoint(x: 2000, y: 1435)

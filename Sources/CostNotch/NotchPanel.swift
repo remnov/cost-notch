@@ -29,6 +29,7 @@ final class NotchPanel: NSPanel {
         ]
         isReleasedWhenClosed = false
         hidesOnDeactivate = false
+        acceptsMouseMovedEvents = true
         level = NSWindow.Level(rawValue: NSWindow.Level.mainMenu.rawValue + 3)
     }
 
